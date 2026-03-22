@@ -115,7 +115,7 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
         <div className="sidebar">
           <div className="widget">
             <div className="widget-hd">
-              <span className="widget-title">AP Top 20</span>
+              <span className="widget-title">Top 10</span>
               <span className="widget-sub">{gender==='M'?"Men's":"Women's"} · D{division}</span>
             </div>
             <table className="std-table">
@@ -136,7 +136,7 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
           <div className="widget">
             <div className="widget-hd">
               <span className="widget-title">Goals Leaders</span>
-              <span className="widget-sub">2025 · D{division}</span>
+              <span className="widget-sub">2026 · D{division}</span>
             </div>
             {performers.map((p,i)=>(
               <div key={i} className="perf-row">

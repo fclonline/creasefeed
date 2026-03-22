@@ -59,7 +59,7 @@ export default function StatsPage({ gender, division, isW }) {
           </button>
         ))}
         <div style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed'", fontSize: 11, color: 'var(--muted)', letterSpacing: '1px' }}>
-          {gender === 'M' ? "Men's" : "Women's"} · D{division} · 2025 Season
+          {gender === 'M' ? "Men's" : "Women's"} · D{division} · 2026 Season
         </div>
       </div>
 

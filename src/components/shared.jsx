@@ -123,7 +123,7 @@ export function ContextBar({ gender, setGender, division, setDivision, isW }) {
           <button key={d} className={`div-btn ${division === d ? ac : ''}`} onClick={() => setDivision(d)}>D{d}</button>
         ))}
       </div>
-      <div className="ctx-season">2025 · Spring Season</div>
+      <div className="ctx-season">2026 · Spring Season</div>
     </div>
   )
 }
