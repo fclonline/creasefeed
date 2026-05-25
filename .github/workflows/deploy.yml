@@ -1,12 +1,7 @@
 name: Deploy to Firebase Hosting
 
 on:
-  push:
-    branches:
-      - main          # auto-deploy on every push to main
-  pull_request:
-    branches:
-      - main          # preview deploy on every PR
+  workflow_dispatch:   # manual-only — trigger from the GitHub Actions UI
 
 jobs:
   build_and_deploy:
@@ -36,20 +31,10 @@ jobs:
           VITE_FIREBASE_APP_ID:             ${{ secrets.VITE_FIREBASE_APP_ID }}
 
       - name: Deploy to Firebase (Production)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken:       ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId:       live
           projectId:       creasefeed
-
-      - name: Deploy Preview (Pull Request)
-        if: github.event_name == 'pull_request'
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken:       ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId:       creasefeed
-          # No channelId = creates a unique preview URL per PR
-          # Firebase posts the preview URL as a comment on the PR automatically
