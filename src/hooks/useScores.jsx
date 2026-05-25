@@ -1,122 +1,67 @@
 // ============================================================================
 // src/hooks/useScores.jsx
-//
-// Central data hook for all live game/standings/stats data.
-//
-// ⚠️  TO SWAP DATA SOURCES:
-//   Change the ONE import line below to point to a different adapter.
-//   Everything else in the app stays the same.
+// PRIMARY: Firestore (populated by NCAA API Cloud Functions)
+// FALLBACK: Empty state — never show ESPN or mock data
 // ============================================================================
-
-import { useState, useEffect, useCallback, useRef } from 'react'
-
-// ─── 👇 SWAP THIS LINE TO CHANGE DATA SOURCE ─────────────────────────────────
-import * as DataSource from '../api/espn.js'
-// import * as DataSource from '../api/sportradar.js'  // ← future
-// import * as DataSource from '../api/sportsdata.js'  // ← future
-// ─────────────────────────────────────────────────────────────────────────────
-
-import { makeGames, STANDINGS_M, STANDINGS_W, STATS_M, STATS_W } from '../data/mockData.js'
-
-const POLL_INTERVAL_LIVE   = 30_000   // 30s — when games are live
-const POLL_INTERVAL_IDLE   = 120_000  // 2min — no live games
-const CACHE_TTL            = 25_000   // don't re-fetch if data is fresh
-
-// simple in-memory cache { key: { data, fetchedAt } }
-const cache = {}
-
-function isFresh(key) {
-  return cache[key] && (Date.now() - cache[key].fetchedAt < CACHE_TTL)
-}
-
-// ── hook ─────────────────────────────────────────────────────────────────────
-export function useScores(gender, date) {
-  const [games,    setGames]    = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState(null)
-  const [source,   setSource]   = useState('mock')  // 'espn' | 'mock'
-  const timerRef = useRef(null)
-
-  const cacheKey = `scoreboard:${gender}:${date || 'today'}`
-
-  const load = useCallback(async (quiet = false) => {
-    if (!quiet) setLoading(true)
-    setError(null)
-
-    // Return cached data if still fresh
-    if (isFresh(cacheKey)) {
-      setGames(cache[cacheKey].data)
-      setLoading(false)
-      return
-    }
-
-    try {
-      const data = await DataSource.fetchScoreboard(gender, date)
-      if (data && data.length > 0) {
-        cache[cacheKey] = { data, fetchedAt: Date.now() }
-        setGames(data)
-        setSource('espn')
-        console.info(`[CreaseFeed] ✓ ESPN scoreboard — ${data.length} games (${gender})`)
-      } else {
-        // ESPN returned empty — off-season or no games today, use mock
-        throw new Error('No games returned from ESPN')
-      }
-    } catch (err) {
-      console.warn(`[CreaseFeed] ESPN unavailable, falling back to mock data:`, err.message)
-      const fallback = makeGames(gender)
-      setGames(fallback)
-      setSource('mock')
-      setError('Live data unavailable — showing demo data')
-    } finally {
-      setLoading(false)
-    }
-  }, [gender, date, cacheKey])
-
-  // Initial fetch + set up polling
+import { useState, useEffect, useRef } from 'react'
+import { subscribeToScoreboard, fetchStandings, fetchStatLeaders, fetchAllPolls } from '../api/firestore.js'
+import { STANDINGS_M, STANDINGS_W, STATS_M, STATS_W } from '../data/mockData.js'
+// ── useScores — real-time Firestore only ─────────────────────────────────────
+// date is YYYYMMDD (e.g. "20260524"); division is "1"/"2"/"3". Both are passed
+// through to the Firestore query so the scoreboard is scoped to the selected
+// day and division. Omit them (e.g. the ticker) to get all recent games.
+export function useScores(gender, date, division) {
+  const [games,   setGames]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(null)
+  const [source,  setSource]  = useState('loading')
+  const unsubRef = useRef(null)
   useEffect(() => {
-    load()
-
-    const poll = () => {
-      const hasLive = games.some(g => g.status === 'live')
-      const interval = hasLive ? POLL_INTERVAL_LIVE : POLL_INTERVAL_IDLE
-      timerRef.current = setTimeout(async () => {
-        await load(true)  // quiet reload — no loading spinner
-        poll()            // reschedule after each fetch
-      }, interval)
+    setLoading(true)
+    setError(null)
+    setSource('loading')
+    // Clean up previous subscription
+    if (unsubRef.current) {
+      unsubRef.current()
+      unsubRef.current = null
     }
-
-    poll()
-
+    unsubRef.current = subscribeToScoreboard(gender, (firestoreGames) => {
+      setGames(firestoreGames)
+      setSource(firestoreGames.length > 0 ? 'ncaa' : 'empty')
+      setLoading(false)
+    }, (err) => {
+      console.warn('[CreaseFeed] Firestore error:', err.message)
+      setGames([])
+      setSource('error')
+      setLoading(false)
+      setError('Unable to load scores — please refresh')
+    }, date, division)
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
+      if (unsubRef.current) {
+        unsubRef.current()
+        unsubRef.current = null
+      }
     }
-  }, [gender, date])   // re-run if gender or date changes
-
-  return { games, loading, error, source, refetch: () => load() }
+  }, [gender, date, division])
+  return { games, loading, error, source }
 }
-
-// ── standings ─────────────────────────────────────────────────────────────────
+// ── useStandings ──────────────────────────────────────────────────────────────
 export function useStandings(gender) {
   const [standings, setStandings] = useState([])
   const [loading,   setLoading]   = useState(true)
-
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
-        const data = await DataSource.fetchStandings(gender)
+        const data = await fetchStandings(gender)
         if (!cancelled) {
-          if (data && data.length > 0) {
-            setStandings(data)
-            console.info(`[CreaseFeed] ✓ ESPN standings (${gender})`)
-          } else {
-            throw new Error('empty')
-          }
+          setStandings(data && data.length > 0
+            ? data
+            : (gender === 'W' ? STANDINGS_W : STANDINGS_M))
         }
       } catch {
         if (!cancelled) {
           setStandings(gender === 'W' ? STANDINGS_W : STANDINGS_M)
-          console.warn(`[CreaseFeed] standings fallback → mock (${gender})`)
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -124,28 +69,27 @@ export function useStandings(gender) {
     })()
     return () => { cancelled = true }
   }, [gender])
-
   return { standings, loading }
 }
-
-// ── stat leaders ──────────────────────────────────────────────────────────────
+// ── useStatLeaders ────────────────────────────────────────────────────────────
 export function useStatLeaders(gender, tab) {
   const [rows,    setRows]    = useState([])
   const [loading, setLoading] = useState(true)
   const [source,  setSource]  = useState('mock')
-
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       setLoading(true)
       try {
-        const data = await DataSource.fetchStatLeaders(gender)
+        const data = await fetchStatLeaders(gender, tab)
         if (!cancelled) {
           if (data && data.length > 0) {
             setRows(data)
-            setSource('espn')
+            setSource('ncaa')
           } else {
-            throw new Error('empty')
+            const mock = gender === 'W' ? STATS_W : STATS_M
+            setRows(mock[tab] || mock.goals)
+            setSource('mock')
           }
         }
       } catch {
@@ -160,33 +104,55 @@ export function useStatLeaders(gender, tab) {
     })()
     return () => { cancelled = true }
   }, [gender, tab])
-
   return { rows, loading, source }
 }
-
-// ── game detail (Pro feature) ─────────────────────────────────────────────────
-export function useGameDetail(espnGameId, gender, enabled = false) {
+// ── useGameDetail ────────────────────────────────────────────────────────────
+export function useGameDetail(gameId, gender, enabled = false) {
   const [detail,  setDetail]  = useState(null)
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState(null)
-
   useEffect(() => {
-    if (!enabled || !espnGameId) return
+    if (!enabled || !gameId) return
     let cancelled = false
     ;(async () => {
       setLoading(true)
       try {
-        const data = await DataSource.fetchGameDetail(espnGameId, gender)
+        const { fetchGameDetail } = await import('../api/firestore.js')
+        const data = await fetchGameDetail(gameId, gender)
         if (!cancelled) setDetail(data)
       } catch (err) {
         if (!cancelled) setError(err.message)
-        console.warn('[CreaseFeed] game detail fetch failed:', err.message)
       } finally {
         if (!cancelled) setLoading(false)
       }
     })()
     return () => { cancelled = true }
-  }, [espnGameId, gender, enabled])
-
+  }, [gameId, gender, enabled])
   return { detail, loading, error }
+}
+// ── usePolls ─────────────────────────────────────────────────────────────────
+// Returns the full { coachesPolls, rpi } shape from fetchAllPolls so the
+// NCAA RPI tab (which reads from the `rpi` Firestore collection via fetchRPI)
+// is wired through correctly. The optional `division` argument refetches RPI
+// when the user toggles D1/D2/D3 — backend currently publishes D1 only, so
+// D2/D3 will resolve to null and render an empty state.
+export function usePolls(gender, division = '1') {
+  const [polls,   setPolls]   = useState({ coachesPolls: [], rpi: null })
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    ;(async () => {
+      try {
+        const data = await fetchAllPolls(gender, division)
+        if (!cancelled) setPolls(data || { coachesPolls: [], rpi: null })
+      } catch {
+        if (!cancelled) setPolls({ coachesPolls: [], rpi: null })
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [gender, division])
+  return { polls, loading }
 }

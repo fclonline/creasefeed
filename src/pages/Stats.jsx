@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { STATS_M, STATS_W } from '../data/mockData.js'
+import { useStatLeaders } from '../hooks/useScores.jsx'
 import { chip, ac } from '../components/shared.jsx'
 
 const GOAL_COLS  = [
@@ -31,24 +31,30 @@ export default function StatsPage({ gender, division, isW }) {
   const [sortKey, setSortKey]     = useState(null)
   const [sortDir, setSortDir]     = useState('desc')
 
-  const data = isW ? STATS_W : STATS_M
+  const { rows: data, loading, source } = useStatLeaders(gender, activeTab)
   const tab  = TABS.find(t => t.key === activeTab)
   const ac_  = chip(isW)
 
   const rows = useMemo(() => {
-    const base = [...(data[activeTab] || data.goals)]
+    const base = [...data]
     if (!sortKey || NON_NUMERIC.includes(sortKey)) return base
     return base.sort((a, b) => {
       const av = parseFloat(a[sortKey]), bv = parseFloat(b[sortKey])
       return sortDir === 'desc' ? bv - av : av - bv
     })
-  }, [data, activeTab, sortKey, sortDir])
+  }, [data, sortKey, sortDir])
 
   const handleSort = (k) => {
     if (NON_NUMERIC.includes(k)) return
     if (sortKey === k) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
     else { setSortKey(k); setSortDir('desc') }
   }
+
+  const sourceLabel = source === 'firestore' ? 'Firestore (scraped)'
+    : source === 'espn' ? 'ESPN API'
+    : source === 'mock' ? 'Sample Data (scrapers pending)'
+    : source === 'none' ? 'No data source connected'
+    : 'Loading...'
 
   return (
     <div className="stats-page">
@@ -63,48 +69,84 @@ export default function StatsPage({ gender, division, isW }) {
         </div>
       </div>
 
-      <div className="leaderboard">
-        <table className="lb-table">
-          <thead>
-            <tr>
-              {tab.cols.map(c => (
-                <th
-                  key={c.k}
-                  className={sortKey === c.k ? (isW ? 'sorted-w' : 'sorted-m') : ''}
-                  onClick={() => handleSort(c.k)}
-                  title={NON_NUMERIC.includes(c.k) ? '' : 'Click to sort'}
-                >
-                  {c.l}
-                  {sortKey === c.k ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={i}>
+      {/* Data source indicator */}
+      <div style={{
+        fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+        color: source === 'none' ? 'var(--red)' : source === 'firestore' ? 'var(--accent)' : source === 'mock' ? 'var(--muted)' : 'var(--yellow)',
+        marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5,
+      }}>
+        <span style={{
+          width: 6, height: 6, borderRadius: '50%', display: 'inline-block',
+          background: source === 'none' ? 'var(--red)' : source === 'firestore' ? 'var(--accent)' : source === 'mock' ? 'var(--muted)' : 'var(--yellow)',
+        }}/>
+        {sourceLabel}
+      </div>
+
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)', fontFamily: "'Barlow Condensed'", fontSize: 16 }}>
+          Loading stats...
+        </div>
+      )}
+
+      {!loading && rows.length === 0 && (
+        <div style={{
+          textAlign: 'center', padding: '60px 20px',
+          border: '1px dashed var(--border2)', margin: '20px 0',
+        }}>
+          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 22, marginBottom: 8, color: 'var(--red)' }}>
+            NO DATA — {tab.label.toUpperCase()}
+          </div>
+          <div style={{ fontFamily: "'Barlow'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
+            Firestore <code>playerStats</code> collection is empty and ESPN leaders endpoint returned no data.
+            <br/>Scrapers need to populate this collection, or connect a stats API.
+          </div>
+        </div>
+      )}
+
+      {!loading && rows.length > 0 && (
+        <div className="leaderboard">
+          <table className="lb-table">
+            <thead>
+              <tr>
                 {tab.cols.map(c => (
-                  <td key={c.k}>
-                    {c.k === 'rank' && <span className="lb-rank">{r.rank}</span>}
-                    {c.k === 'name' && (
-                      <div>
-                        <div className="lb-name">{r.name}</div>
-                      </div>
-                    )}
-                    {c.k === 'team' && <span className="lb-school">{r.team}</span>}
-                    {c.k === 'pos'  && <span className="lb-pos">{r.pos}</span>}
-                    {!NON_NUMERIC.includes(c.k) && (
-                      <span className={c.k === tab.hi ? (isW ? 'lb-hi-w' : 'lb-hi-m') : ''}>
-                        {r[c.k]}
-                      </span>
-                    )}
-                  </td>
+                  <th
+                    key={c.k}
+                    className={sortKey === c.k ? (isW ? 'sorted-w' : 'sorted-m') : ''}
+                    onClick={() => handleSort(c.k)}
+                    title={NON_NUMERIC.includes(c.k) ? '' : 'Click to sort'}
+                  >
+                    {c.l}
+                    {sortKey === c.k ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i}>
+                  {tab.cols.map(c => (
+                    <td key={c.k}>
+                      {c.k === 'rank' && <span className="lb-rank">{r.rank}</span>}
+                      {c.k === 'name' && (
+                        <div>
+                          <div className="lb-name">{r.name}</div>
+                        </div>
+                      )}
+                      {c.k === 'team' && <span className="lb-school">{r.team}</span>}
+                      {c.k === 'pos'  && <span className="lb-pos">{r.pos}</span>}
+                      {!NON_NUMERIC.includes(c.k) && (
+                        <span className={c.k === tab.hi ? (isW ? 'lb-hi-w' : 'lb-hi-m') : ''}>
+                          {r[c.k]}
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

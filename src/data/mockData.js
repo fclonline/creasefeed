@@ -1,6 +1,6 @@
-// ─── CONFERENCES ────────────────────────────────────────────────────────────
-export const CONFERENCES_M = ["All","ACC","Big Ten","Ivy League","Patriot","CAA","MAAC","SoCon","NEC","ASUN"]
-export const CONFERENCES_W = ["All","ACC","Big Ten","Ivy League","Patriot","CAA","America East","Big West","MAAC","NEC"]
+// ─── CONFERENCES (must match schoolUrls.js) ─────────────────────────────────
+export const CONFERENCES_M = ["All","ACC","ASUN","America East","Atlantic 10","Big East","Big Ten","CAA","Ivy League","MAAC","NEC","Patriot"]
+export const CONFERENCES_W = ["All","ACC","ASUN","America East","American","Atlantic 10","Big 12","Big East","Big South","Big Ten","CAA","Ivy League","MAAC","NEC","Patriot"]
 
 // ─── GAMES ──────────────────────────────────────────────────────────────────
 export const makeGames = (gender) => [
@@ -41,127 +41,134 @@ export const STANDINGS_W = [
 ]
 
 // ─── STATS ───────────────────────────────────────────────────────────────────
-// NOTE: Demo placeholder data — players, teams, and stats are approximated
-// for illustration purposes. Replace with live API data when available.
 export const STATS_M = {
   goals: [
-    {rank:1, name:"Dominic Pietramala",team:"North Carolina",pos:"ATT", gp:9, g:42, a:12, pts:54, gpg:4.7},
-    {rank:2, name:"Joey Epstein",     team:"Maryland",     pos:"ATT", gp:9, g:36, a:18, pts:54, gpg:4.0},
-    {rank:3, name:"Luke Breslin",     team:"Lehigh",       pos:"ATT", gp:8, g:33, a:10, pts:43, gpg:4.1},
-    {rank:4, name:"Nate Kabiri",      team:"Princeton",    pos:"ATT", gp:8, g:30, a:18, pts:48, gpg:3.8},
-    {rank:5, name:"Matt Moore",       team:"Virginia",     pos:"ATT", gp:9, g:29, a:15, pts:44, gpg:3.2},
-    {rank:6, name:"Aidan Fenn",       team:"Syracuse",     pos:"ATT", gp:9, g:28, a:14, pts:42, gpg:3.1},
-    {rank:7, name:"Brock Turnbaugh",  team:"Notre Dame",   pos:"ATT", gp:9, g:27, a:11, pts:38, gpg:3.0},
-    {rank:8, name:"Thomas McConvey",  team:"Penn State",   pos:"ATT", gp:8, g:26, a:16, pts:42, gpg:3.3},
-    {rank:9, name:"Jake Naso",        team:"Duke",         pos:"ATT", gp:9, g:25, a:13, pts:38, gpg:2.8},
-    {rank:10,name:"Owen Caputo",      team:"Yale",         pos:"ATT", gp:8, g:24, a:12, pts:36, gpg:3.0},
-    {rank:11,name:"Brady Gunnell",    team:"Johns Hopkins",pos:"ATT", gp:9, g:23, a:14, pts:37, gpg:2.6},
-    {rank:12,name:"Cole Kirst",       team:"Cornell",      pos:"ATT", gp:8, g:22, a:10, pts:32, gpg:2.8},
-    {rank:13,name:"Jack Keogh",       team:"Michigan",     pos:"MID", gp:9, g:21, a:18, pts:39, gpg:2.3},
-    {rank:14,name:"Evan Plunkett",    team:"Army",         pos:"MID", gp:9, g:20, a:26, pts:46, gpg:2.2},
-    {rank:15,name:"Connor Shellenberger",team:"Virginia",  pos:"ATT", gp:9, g:19, a:22, pts:41, gpg:2.1},
+    {rank:1, name:"Lyle Thompson",    team:"Virginia",     pos:"ATT", gp:9, g:47, a:18, pts:65, gpg:5.2},
+    {rank:2, name:"Connor Martin",    team:"Maryland",     pos:"ATT", gp:9, g:38, a:22, pts:60, gpg:4.2},
+    {rank:3, name:"Miles Thompson",   team:"Syracuse",     pos:"MID", gp:9, g:34, a:28, pts:62, gpg:3.8},
+    {rank:4, name:"Jeff Teat",        team:"Cornell",      pos:"ATT", gp:8, g:32, a:14, pts:46, gpg:4.0},
+    {rank:5, name:"Pat Spencer",      team:"Loyola",       pos:"MID", gp:9, g:30, a:31, pts:61, gpg:3.3},
+    {rank:6, name:"Michael Sowers",   team:"Duke",         pos:"ATT", gp:9, g:28, a:20, pts:48, gpg:3.1},
+    {rank:7, name:"Mikey Wynne",      team:"Penn State",   pos:"ATT", gp:8, g:27, a:16, pts:43, gpg:3.4},
+    {rank:8, name:"TD Ierlan",        team:"Yale",         pos:"MID", gp:8, g:26, a:19, pts:45, gpg:3.3},
+    {rank:9, name:"Will Mark",        team:"Hofstra",      pos:"ATT", gp:9, g:25, a:11, pts:36, gpg:2.8},
+    {rank:10,name:"Jake Froccaro",    team:"Notre Dame",   pos:"ATT", gp:9, g:24, a:13, pts:37, gpg:2.7},
+    {rank:11,name:"Peter Arcaro",     team:"Johns Hopkins",pos:"ATT", gp:9, g:23, a:15, pts:38, gpg:2.6},
+    {rank:12,name:"Brennan O'Neill",  team:"Duke",         pos:"ATT", gp:9, g:22, a:17, pts:39, gpg:2.4},
+    {rank:13,name:"Chris Gray",       team:"Virginia",     pos:"MID", gp:9, g:21, a:20, pts:41, gpg:2.3},
+    {rank:14,name:"Logan Wisnauskas", team:"Maryland",     pos:"ATT", gp:9, g:20, a:18, pts:38, gpg:2.2},
+    {rank:15,name:"Michael Kraus",    team:"Virginia",     pos:"ATT", gp:9, g:19, a:22, pts:41, gpg:2.1},
   ],
   assists: [
-    {rank:1, name:"Evan Plunkett",    team:"Army",         pos:"MID", gp:9, g:20, a:26, pts:46, apg:2.9},
-    {rank:2, name:"Connor Shellenberger",team:"Virginia",  pos:"ATT", gp:9, g:19, a:22, pts:41, apg:2.4},
-    {rank:3, name:"Nate Kabiri",      team:"Princeton",    pos:"ATT", gp:8, g:30, a:18, pts:48, apg:2.3},
-    {rank:4, name:"Joey Epstein",     team:"Maryland",     pos:"ATT", gp:9, g:36, a:18, pts:54, apg:2.0},
-    {rank:5, name:"Jack Keogh",       team:"Michigan",     pos:"MID", gp:9, g:21, a:18, pts:39, apg:2.0},
-    {rank:6, name:"Thomas McConvey",  team:"Penn State",   pos:"ATT", gp:8, g:26, a:16, pts:42, apg:2.0},
-    {rank:7, name:"Matt Moore",       team:"Virginia",     pos:"ATT", gp:9, g:29, a:15, pts:44, apg:1.7},
-    {rank:8, name:"Aidan Fenn",       team:"Syracuse",     pos:"ATT", gp:9, g:28, a:14, pts:42, apg:1.6},
-    {rank:9, name:"Brady Gunnell",    team:"Johns Hopkins",pos:"ATT", gp:9, g:23, a:14, pts:37, apg:1.6},
-    {rank:10,name:"Jake Naso",        team:"Duke",         pos:"ATT", gp:9, g:25, a:13, pts:38, apg:1.4},
-    {rank:11,name:"Dominic Pietramala",team:"North Carolina",pos:"ATT",gp:9, g:42, a:12, pts:54, apg:1.3},
-    {rank:12,name:"Owen Caputo",      team:"Yale",         pos:"ATT", gp:8, g:24, a:12, pts:36, apg:1.5},
-    {rank:13,name:"Brock Turnbaugh",  team:"Notre Dame",   pos:"ATT", gp:9, g:27, a:11, pts:38, apg:1.2},
-    {rank:14,name:"Luke Breslin",     team:"Lehigh",       pos:"ATT", gp:8, g:33, a:10, pts:43, apg:1.3},
-    {rank:15,name:"Cole Kirst",       team:"Cornell",      pos:"ATT", gp:8, g:22, a:10, pts:32, apg:1.3},
+    {rank:1, name:"Pat Spencer",      team:"Loyola",       pos:"MID", gp:9, g:30, a:31, pts:61, apg:3.4},
+    {rank:2, name:"Miles Thompson",   team:"Syracuse",     pos:"MID", gp:9, g:34, a:28, pts:62, apg:3.1},
+    {rank:3, name:"Connor Martin",    team:"Maryland",     pos:"ATT", gp:9, g:38, a:22, pts:60, apg:2.4},
+    {rank:4, name:"Michael Kraus",    team:"Virginia",     pos:"ATT", gp:9, g:19, a:22, pts:41, apg:2.4},
+    {rank:5, name:"Chris Gray",       team:"Virginia",     pos:"MID", gp:9, g:21, a:20, pts:41, apg:2.2},
+    {rank:6, name:"Michael Sowers",   team:"Duke",         pos:"ATT", gp:9, g:28, a:20, pts:48, apg:2.2},
+    {rank:7, name:"TD Ierlan",        team:"Yale",         pos:"MID", gp:8, g:26, a:19, pts:45, apg:2.4},
+    {rank:8, name:"Logan Wisnauskas", team:"Maryland",     pos:"ATT", gp:9, g:20, a:18, pts:38, apg:2.0},
+    {rank:9, name:"Lyle Thompson",    team:"Virginia",     pos:"ATT", gp:9, g:47, a:18, pts:65, apg:2.0},
+    {rank:10,name:"Brennan O'Neill",  team:"Duke",         pos:"ATT", gp:9, g:22, a:17, pts:39, apg:1.9},
+    {rank:11,name:"Mikey Wynne",      team:"Penn State",   pos:"ATT", gp:8, g:27, a:16, pts:43, apg:2.0},
+    {rank:12,name:"Peter Arcaro",     team:"Johns Hopkins",pos:"ATT", gp:9, g:23, a:15, pts:38, apg:1.7},
+    {rank:13,name:"Jake Froccaro",    team:"Notre Dame",   pos:"ATT", gp:9, g:24, a:13, pts:37, apg:1.4},
+    {rank:14,name:"Jeff Teat",        team:"Cornell",      pos:"ATT", gp:8, g:32, a:14, pts:46, apg:1.8},
+    {rank:15,name:"Will Mark",        team:"Hofstra",      pos:"ATT", gp:9, g:25, a:11, pts:36, apg:1.2},
   ],
   saves: [
-    {rank:1, name:"Sean Byrne",       team:"Army",         pos:"GK",  gp:9, sv:118, ga:56, svpct:".678", gaa:6.2},
-    {rank:2, name:"Tommy Halloran",   team:"Penn State",   pos:"GK",  gp:8, sv:102, ga:42, svpct:".708", gaa:5.3},
-    {rank:3, name:"Logan McNaney",    team:"Maryland",     pos:"GK",  gp:9, sv:96,  ga:46, svpct:".676", gaa:5.1},
-    {rank:4, name:"Ryan Frawley",     team:"Notre Dame",   pos:"GK",  gp:9, sv:94,  ga:50, svpct:".653", gaa:5.6},
-    {rank:5, name:"Gavin Cornell",    team:"Cornell",      pos:"GK",  gp:8, sv:90,  ga:44, svpct:".672", gaa:5.5},
-    {rank:6, name:"Matt Nunes",       team:"Yale",         pos:"GK",  gp:8, sv:87,  ga:40, svpct:".685", gaa:5.0},
-    {rank:7, name:"Mike Adler",       team:"Villanova",    pos:"GK",  gp:9, sv:86,  ga:58, svpct:".597", gaa:6.4},
-    {rank:8, name:"Matthew Nunes",    team:"Virginia",     pos:"GK",  gp:9, sv:84,  ga:38, svpct:".689", gaa:4.2},
-    {rank:9, name:"Charlie Donahue",  team:"Rutgers",      pos:"GK",  gp:9, sv:81,  ga:54, svpct:".600", gaa:6.0},
-    {rank:10,name:"Jake Gallagher",   team:"Syracuse",     pos:"GK",  gp:9, sv:79,  ga:48, svpct:".622", gaa:5.3},
-    {rank:11,name:"Ben Trocki",       team:"Harvard",      pos:"GK",  gp:8, sv:76,  ga:42, svpct:".644", gaa:5.3},
-    {rank:12,name:"Sam Hayward",      team:"Princeton",    pos:"GK",  gp:8, sv:73,  ga:46, svpct:".613", gaa:5.8},
-    {rank:13,name:"Finn Dingman",     team:"Denver",       pos:"GK",  gp:9, sv:72,  ga:50, svpct:".590", gaa:5.6},
-    {rank:14,name:"Liam Entenmann",   team:"Duke",         pos:"GK",  gp:9, sv:70,  ga:44, svpct:".614", gaa:4.9},
-    {rank:15,name:"Jack Fracyon",     team:"Georgetown",   pos:"GK",  gp:8, sv:68,  ga:48, svpct:".586", gaa:6.0},
+    {rank:1, name:"Tyler Coon",       team:"Army",         pos:"GK",  gp:9, sv:112, ga:54, svpct:".675", gaa:6.0},
+    {rank:2, name:"Doug Tuttle",      team:"Penn State",   pos:"GK",  gp:8, sv:98,  ga:44, svpct:".690", gaa:5.5},
+    {rank:3, name:"Gunnar Waldt",     team:"Maryland",     pos:"GK",  gp:9, sv:94,  ga:48, svpct:".662", gaa:5.3},
+    {rank:4, name:"Jack Sennett",     team:"Notre Dame",   pos:"GK",  gp:9, sv:90,  ga:52, svpct:".634", gaa:5.8},
+    {rank:5, name:"Max Adler",        team:"Cornell",      pos:"GK",  gp:8, sv:88,  ga:46, svpct:".657", gaa:5.8},
+    {rank:6, name:"Drew Adams",       team:"Yale",         pos:"GK",  gp:8, sv:85,  ga:42, svpct:".669", gaa:5.3},
+    {rank:7, name:"Mike Dempsey",     team:"Villanova",    pos:"GK",  gp:9, sv:84,  ga:58, svpct:".591", gaa:6.4},
+    {rank:8, name:"Colin Chell",      team:"Virginia",     pos:"GK",  gp:9, sv:82,  ga:40, svpct:".672", gaa:4.4},
+    {rank:9, name:"Kyle Mullen",      team:"Rutgers",      pos:"GK",  gp:9, sv:79,  ga:55, svpct:".590", gaa:6.1},
+    {rank:10,name:"Noah Cluley",      team:"Syracuse",     pos:"GK",  gp:9, sv:77,  ga:49, svpct:".611", gaa:5.4},
+    {rank:11,name:"Owen McElroy",     team:"Harvard",      pos:"GK",  gp:8, sv:74,  ga:44, svpct:".627", gaa:5.5},
+    {rank:12,name:"Jack Rowlett",     team:"Princeton",    pos:"GK",  gp:8, sv:71,  ga:48, svpct:".597", gaa:6.0},
+    {rank:13,name:"AJ Fiore",         team:"Denver",       pos:"GK",  gp:9, sv:70,  ga:52, svpct:".574", gaa:5.8},
+    {rank:14,name:"Liam Entenmann",   team:"Duke",         pos:"GK",  gp:9, sv:68,  ga:45, svpct:".602", gaa:5.0},
+    {rank:15,name:"Mark Bice",        team:"Georgetown",   pos:"GK",  gp:8, sv:66,  ga:50, svpct:".569", gaa:6.3},
   ],
 }
 
 export const STATS_W = {
   goals: [
-    {rank:1, name:"Madison Taylor",   team:"Northwestern",     pos:"ATT", gp:10, g:48, a:16, pts:64, gpg:4.8},
-    {rank:2, name:"Belle Smith",      team:"North Carolina",   pos:"ATT", gp:10, g:42, a:22, pts:64, gpg:4.2},
-    {rank:3, name:"Izzy Scane",       team:"Northwestern",     pos:"ATT", gp:9,  g:38, a:14, pts:52, gpg:4.2},
-    {rank:4, name:"Aurora Cordingley",team:"Maryland",         pos:"ATT", gp:10, g:36, a:20, pts:56, gpg:3.6},
-    {rank:5, name:"Caitlyn Wurzburger",team:"Syracuse",        pos:"ATT", gp:10, g:34, a:18, pts:52, gpg:3.4},
-    {rank:6, name:"Jenn Medjid",      team:"Boston College",   pos:"ATT", gp:9,  g:32, a:12, pts:44, gpg:3.6},
-    {rank:7, name:"Sydney Sweitzer",  team:"Penn State",       pos:"ATT", gp:9,  g:30, a:16, pts:46, gpg:3.3},
-    {rank:8, name:"Maggie Boyd",      team:"Virginia",         pos:"ATT", gp:9,  g:28, a:14, pts:42, gpg:3.1},
-    {rank:9, name:"Courtney Patterson",team:"Florida",         pos:"ATT", gp:9,  g:27, a:10, pts:37, gpg:3.0},
-    {rank:10,name:"Kasey Choma",      team:"Notre Dame",       pos:"ATT", gp:9,  g:26, a:14, pts:40, gpg:2.9},
-    {rank:11,name:"Emily Nalls",      team:"Maryland",         pos:"MID", gp:10, g:24, a:18, pts:42, gpg:2.4},
-    {rank:12,name:"Ellie DeGarmo",    team:"Yale",             pos:"ATT", gp:9,  g:23, a:10, pts:33, gpg:2.6},
-    {rank:13,name:"Jordan Tilson",    team:"Georgetown",       pos:"MID", gp:9,  g:22, a:16, pts:38, gpg:2.4},
-    {rank:14,name:"Paige Gunning",    team:"James Madison",    pos:"ATT", gp:9,  g:21, a:12, pts:33, gpg:2.3},
-    {rank:15,name:"Campbell Fisher",  team:"Stony Brook",      pos:"ATT", gp:9,  g:20, a:8,  pts:28, gpg:2.2},
+    {rank:1, name:"Kayla Treanor",    team:"Syracuse",         pos:"ATT", gp:10, g:52, a:20, pts:72, gpg:5.2},
+    {rank:2, name:"Taylor Cummings",  team:"Maryland",         pos:"MID", gp:10, g:44, a:30, pts:74, gpg:4.4},
+    {rank:3, name:"Marie McCool",     team:"Northwestern",     pos:"ATT", gp:9,  g:40, a:18, pts:58, gpg:4.4},
+    {rank:4, name:"Ally Carey",       team:"North Carolina",   pos:"ATT", gp:10, g:38, a:22, pts:60, gpg:3.8},
+    {rank:5, name:"Kenzie Kent",      team:"North Carolina",   pos:"MID", gp:10, g:35, a:28, pts:63, gpg:3.5},
+    {rank:6, name:"Hannah Munro",     team:"Boston College",   pos:"ATT", gp:9,  g:33, a:14, pts:47, gpg:3.7},
+    {rank:7, name:"Charlotte North",  team:"Boston College",   pos:"ATT", gp:9,  g:32, a:16, pts:48, gpg:3.6},
+    {rank:8, name:"Grace Mlinaric",   team:"Penn State",       pos:"ATT", gp:9,  g:30, a:12, pts:42, gpg:3.3},
+    {rank:9, name:"Gabby Rosenzweig", team:"Maryland",         pos:"ATT", gp:10, g:28, a:20, pts:48, gpg:2.8},
+    {rank:10,name:"Kelsey Onwudiwe",  team:"Florida",          pos:"ATT", gp:9,  g:27, a:10, pts:37, gpg:3.0},
+    {rank:11,name:"Shannon Kavanagh", team:"Notre Dame",       pos:"ATT", gp:9,  g:25, a:14, pts:39, gpg:2.8},
+    {rank:12,name:"Emma Trenk",       team:"Yale",             pos:"ATT", gp:9,  g:24, a:12, pts:36, gpg:2.7},
+    {rank:13,name:"Meg Hanley",       team:"Georgetown",       pos:"MID", gp:9,  g:22, a:18, pts:40, gpg:2.4},
+    {rank:14,name:"Emma Gorden",      team:"Northwestern",     pos:"ATT", gp:9,  g:21, a:16, pts:37, gpg:2.3},
+    {rank:15,name:"Sophia Palombo",   team:"Virginia",         pos:"ATT", gp:9,  g:20, a:14, pts:34, gpg:2.2},
   ],
   assists: [
-    {rank:1, name:"Belle Smith",      team:"North Carolina",   pos:"ATT", gp:10, g:42, a:22, pts:64, apg:2.2},
-    {rank:2, name:"Aurora Cordingley",team:"Maryland",         pos:"ATT", gp:10, g:36, a:20, pts:56, apg:2.0},
-    {rank:3, name:"Emily Nalls",      team:"Maryland",         pos:"MID", gp:10, g:24, a:18, pts:42, apg:1.8},
-    {rank:4, name:"Caitlyn Wurzburger",team:"Syracuse",        pos:"ATT", gp:10, g:34, a:18, pts:52, apg:1.8},
-    {rank:5, name:"Madison Taylor",   team:"Northwestern",     pos:"ATT", gp:10, g:48, a:16, pts:64, apg:1.6},
-    {rank:6, name:"Sydney Sweitzer",  team:"Penn State",       pos:"ATT", gp:9,  g:30, a:16, pts:46, apg:1.8},
-    {rank:7, name:"Jordan Tilson",    team:"Georgetown",       pos:"MID", gp:9,  g:22, a:16, pts:38, apg:1.8},
-    {rank:8, name:"Izzy Scane",       team:"Northwestern",     pos:"ATT", gp:9,  g:38, a:14, pts:52, apg:1.6},
-    {rank:9, name:"Maggie Boyd",      team:"Virginia",         pos:"ATT", gp:9,  g:28, a:14, pts:42, apg:1.6},
-    {rank:10,name:"Kasey Choma",      team:"Notre Dame",       pos:"ATT", gp:9,  g:26, a:14, pts:40, apg:1.6},
-    {rank:11,name:"Jenn Medjid",      team:"Boston College",   pos:"ATT", gp:9,  g:32, a:12, pts:44, apg:1.3},
-    {rank:12,name:"Paige Gunning",    team:"James Madison",    pos:"ATT", gp:9,  g:21, a:12, pts:33, apg:1.3},
-    {rank:13,name:"Courtney Patterson",team:"Florida",         pos:"ATT", gp:9,  g:27, a:10, pts:37, apg:1.1},
-    {rank:14,name:"Ellie DeGarmo",    team:"Yale",             pos:"ATT", gp:9,  g:23, a:10, pts:33, apg:1.1},
-    {rank:15,name:"Campbell Fisher",  team:"Stony Brook",      pos:"ATT", gp:9,  g:20, a:8,  pts:28, apg:0.9},
+    {rank:1, name:"Taylor Cummings",  team:"Maryland",         pos:"MID", gp:10, g:44, a:30, pts:74, apg:3.0},
+    {rank:2, name:"Kenzie Kent",      team:"North Carolina",   pos:"MID", gp:10, g:35, a:28, pts:63, apg:2.8},
+    {rank:3, name:"Ally Carey",       team:"North Carolina",   pos:"ATT", gp:10, g:38, a:22, pts:60, apg:2.2},
+    {rank:4, name:"Kayla Treanor",    team:"Syracuse",         pos:"ATT", gp:10, g:52, a:20, pts:72, apg:2.0},
+    {rank:5, name:"Gabby Rosenzweig", team:"Maryland",         pos:"ATT", gp:10, g:28, a:20, pts:48, apg:2.0},
+    {rank:6, name:"Meg Hanley",       team:"Georgetown",       pos:"MID", gp:9,  g:22, a:18, pts:40, apg:2.0},
+    {rank:7, name:"Charlotte North",  team:"Boston College",   pos:"ATT", gp:9,  g:32, a:16, pts:48, apg:1.8},
+    {rank:8, name:"Emma Gorden",      team:"Northwestern",     pos:"ATT", gp:9,  g:21, a:16, pts:37, apg:1.8},
+    {rank:9, name:"Sophia Palombo",   team:"Virginia",         pos:"ATT", gp:9,  g:20, a:14, pts:34, apg:1.6},
+    {rank:10,name:"Hannah Munro",     team:"Boston College",   pos:"ATT", gp:9,  g:33, a:14, pts:47, apg:1.6},
+    {rank:11,name:"Shannon Kavanagh", team:"Notre Dame",       pos:"ATT", gp:9,  g:25, a:14, pts:39, apg:1.6},
+    {rank:12,name:"Emma Trenk",       team:"Yale",             pos:"ATT", gp:9,  g:24, a:12, pts:36, apg:1.3},
+    {rank:13,name:"Grace Mlinaric",   team:"Penn State",       pos:"ATT", gp:9,  g:30, a:12, pts:42, apg:1.3},
+    {rank:14,name:"Kelsey Onwudiwe",  team:"Florida",          pos:"ATT", gp:9,  g:27, a:10, pts:37, apg:1.1},
+    {rank:15,name:"Marie McCool",     team:"Northwestern",     pos:"ATT", gp:9,  g:40, a:18, pts:58, apg:2.0},
   ],
   saves: [
-    {rank:1, name:"Natalie Aiosa",    team:"Boston University", pos:"GK",  gp:8,  sv:110, ga:38, svpct:".743", gaa:4.8},
-    {rank:2, name:"Emily Sterling",   team:"Maryland",         pos:"GK",  gp:10, sv:104, ga:44, svpct:".703", gaa:4.4},
-    {rank:3, name:"Maya Garcia",      team:"Stony Brook",      pos:"GK",  gp:9,  sv:98,  ga:40, svpct:".710", gaa:4.4},
-    {rank:4, name:"Sophie Chen",      team:"Penn State",       pos:"GK",  gp:9,  sv:94,  ga:42, svpct:".691", gaa:4.7},
-    {rank:5, name:"Taylor Moreno",    team:"North Carolina",   pos:"GK",  gp:10, sv:92,  ga:36, svpct:".719", gaa:3.6},
-    {rank:6, name:"Lily Hart",        team:"Virginia",         pos:"GK",  gp:9,  sv:88,  ga:44, svpct:".667", gaa:4.9},
-    {rank:7, name:"Ava Mitchell",     team:"Notre Dame",       pos:"GK",  gp:9,  sv:84,  ga:48, svpct:".636", gaa:5.3},
-    {rank:8, name:"Rachel Kraemer",   team:"Northwestern",     pos:"GK",  gp:9,  sv:82,  ga:40, svpct:".672", gaa:4.4},
-    {rank:9, name:"Emma Franklin",    team:"Florida",          pos:"GK",  gp:9,  sv:79,  ga:52, svpct:".603", gaa:5.8},
-    {rank:10,name:"Grace O'Brien",    team:"Boston College",   pos:"GK",  gp:9,  sv:76,  ga:42, svpct:".644", gaa:4.7},
-    {rank:11,name:"Hannah Albright",  team:"Syracuse",         pos:"GK",  gp:10, sv:74,  ga:46, svpct:".617", gaa:4.6},
-    {rank:12,name:"Kayla Rossi",      team:"James Madison",    pos:"GK",  gp:9,  sv:72,  ga:40, svpct:".643", gaa:4.4},
-    {rank:13,name:"Claire Donovan",   team:"Georgetown",       pos:"GK",  gp:9,  sv:70,  ga:48, svpct:".593", gaa:5.3},
-    {rank:14,name:"Nora Phillips",    team:"Yale",             pos:"GK",  gp:9,  sv:67,  ga:42, svpct:".615", gaa:4.7},
-    {rank:15,name:"Abby Rollins",     team:"Colorado",         pos:"GK",  gp:9,  sv:65,  ga:50, svpct:".565", gaa:5.6},
+    {rank:1, name:"Halle Majorana",   team:"Stony Brook",      pos:"GK",  gp:8,  sv:108, ga:40, svpct:".730", gaa:5.0},
+    {rank:2, name:"Megan Levy",       team:"Maryland",         pos:"GK",  gp:10, sv:101, ga:48, svpct:".678", gaa:4.8},
+    {rank:3, name:"Carly Murray",     team:"Duke",             pos:"GK",  gp:9,  sv:97,  ga:52, svpct:".651", gaa:5.8},
+    {rank:4, name:"Hope Burnham",     team:"Penn State",       pos:"GK",  gp:9,  sv:92,  ga:44, svpct:".676", gaa:4.9},
+    {rank:5, name:"Sarah Reeve",      team:"North Carolina",   pos:"GK",  gp:10, sv:89,  ga:38, svpct:".701", gaa:3.8},
+    {rank:6, name:"Devon Knapp",      team:"Virginia",         pos:"GK",  gp:9,  sv:85,  ga:46, svpct:".649", gaa:5.1},
+    {rank:7, name:"Kiera Brady",      team:"Notre Dame",       pos:"GK",  gp:9,  sv:82,  ga:50, svpct:".621", gaa:5.6},
+    {rank:8, name:"Brooke Bohlander", team:"Northwestern",     pos:"GK",  gp:9,  sv:80,  ga:42, svpct:".656", gaa:4.7},
+    {rank:9, name:"Lily Reeve",       team:"Florida",          pos:"GK",  gp:9,  sv:77,  ga:55, svpct:".583", gaa:6.1},
+    {rank:10,name:"Ella Simmons",     team:"Boston College",   pos:"GK",  gp:9,  sv:74,  ga:44, svpct:".627", gaa:4.9},
+    {rank:11,name:"Abby Kneipp",      team:"Syracuse",         pos:"GK",  gp:10, sv:72,  ga:48, svpct:".600", gaa:4.8},
+    {rank:12,name:"Corinne Gillespie",team:"James Madison",    pos:"GK",  gp:8,  sv:70,  ga:42, svpct:".625", gaa:5.3},
+    {rank:13,name:"Lauren Maguire",   team:"Georgetown",       pos:"GK",  gp:9,  sv:68,  ga:50, svpct:".576", gaa:5.6},
+    {rank:14,name:"Hannah van Middelem",team:"Yale",           pos:"GK",  gp:9,  sv:65,  ga:44, svpct:".596", gaa:4.9},
+    {rank:15,name:"Lindsey Ronbeck",  team:"Colorado",         pos:"GK",  gp:9,  sv:63,  ga:52, svpct:".548", gaa:5.8},
   ],
 }
 
 // ─── SCHEDULE ────────────────────────────────────────────────────────────────
+function getScheduleLabel(daysFromToday) {
+  const d = new Date()
+  d.setDate(d.getDate() + daysFromToday)
+  const days   = ['SUN','MON','TUE','WED','THU','FRI','SAT']
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+  if (daysFromToday === 0) return `TODAY, ${months[d.getMonth()]} ${d.getDate()}`
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`
+}
+
 export const SCHEDULE_DAYS = [
-  { label:"MON, MAR 17", games:[
+  { label: getScheduleLabel(-4), games:[
     {id:101,status:"final",   period:"FINAL",      conf:"Ivy",     gender:"M",time:"1:00 PM", away:{name:"Harvard",      rank:null,score:8, rec:"4-4"},home:{name:"Brown",      rank:null,score:6, rec:"3-5"},loc:"Stevenson Field · Providence, RI"},
     {id:102,status:"final",   period:"FINAL",      conf:"MAAC",    gender:"M",time:"3:00 PM", away:{name:"Fairfield",    rank:null,score:5, rec:"3-5"},home:{name:"Siena",       rank:null,score:9, rec:"5-3"},loc:"Siena Lacrosse Field"},
   ]},
-  { label:"WED, MAR 19", games:[
+  { label: getScheduleLabel(-2), games:[
     {id:103,status:"final",   period:"FINAL",      conf:"ACC",     gender:"W",time:"4:00 PM", away:{name:"Virginia",     rank:7,  score:11,rec:"7-2"},home:{name:"Clemson",     rank:null,score:8, rec:"4-5"},loc:"Riggs Field · Clemson, SC"},
     {id:104,status:"final",   period:"FINAL",      conf:"Big Ten", gender:"M",time:"6:00 PM", away:{name:"Rutgers",      rank:null,score:9,rec:"5-4"},home:{name:"Michigan",     rank:9,  score:12,rec:"6-3"},loc:"Fisher Stadium · Ann Arbor, MI"},
   ]},
-  { label:"FRI, MAR 21", games:[
+  { label: getScheduleLabel(0), games:[
     {id:1,  status:"live",    period:"Q3 8:42",    conf:"ACC",     gender:"M",time:"LIVE",    away:{name:"Maryland",     rank:1,  score:9, rec:"8-1"},home:{name:"Notre Dame",  rank:4,  score:7, rec:"7-2"},loc:"Arlotta Stadium"},
     {id:2,  status:"live",    period:"Q2 3:15",    conf:"Big Ten", gender:"M",time:"LIVE",    away:{name:"Penn State",   rank:3,  score:5, rec:"7-1"},home:{name:"Ohio State",   rank:null,score:3,rec:"5-4"},loc:"Selby Stadium"},
     {id:5,  status:"final",   period:"FINAL",      conf:"Patriot", gender:"M",time:"12:00 PM",away:{name:"Lehigh",       rank:null,score:7,rec:"4-5"},home:{name:"Army",         rank:null,score:10,rec:"6-3"},loc:"Shea Stadium"},
@@ -170,7 +177,7 @@ export const SCHEDULE_DAYS = [
     {id:8,  status:"upcoming",period:"7:00 PM ET", conf:"ACC",     gender:"M",time:"7:00 PM", away:{name:"Syracuse",     rank:7,  score:null,rec:"7-2"},home:{name:"North Carolina",rank:10,score:null,rec:"6-3"},loc:"Dorrance Field"},
     {id:201,status:"upcoming",period:"5:00 PM ET", conf:"ACC",     gender:"W",time:"5:00 PM", away:{name:"Virginia",     rank:7,  score:null,rec:"7-2"},home:{name:"Duke",         rank:null,score:null,rec:"5-4"},loc:"Koskinen Stadium"},
   ]},
-  { label:"SAT, MAR 22", games:[
+  { label: getScheduleLabel(1), games:[
     {id:301,status:"upcoming",period:"12:00 PM ET",conf:"Ivy",     gender:"M",time:"12:00 PM",away:{name:"Yale",         rank:8,  score:null,rec:"6-2"},home:{name:"Dartmouth",   rank:null,score:null,rec:"3-5"},loc:"Memorial Field · Hanover, NH"},
     {id:302,status:"upcoming",period:"1:00 PM ET", conf:"ACC",     gender:"W",time:"1:00 PM", away:{name:"North Carolina",rank:1, score:null,rec:"10-0"},home:{name:"Syracuse",   rank:6,  score:null,rec:"7-3"},loc:"SU Turf Complex · Syracuse, NY"},
     {id:303,status:"upcoming",period:"2:00 PM ET", conf:"Big Ten", gender:"M",time:"2:00 PM", away:{name:"Maryland",     rank:1,  score:null,rec:"8-1"},home:{name:"Penn State",   rank:3,  score:null,rec:"7-1"},loc:"Panzer Stadium · University Park, PA"},
@@ -192,7 +199,62 @@ export const TICKER_ITEMS = [
   {text:"STONY BROOK @ MARYLAND",       period:"6:00 PM ET", live:false, gender:"W"},
 ]
 
-export const DATES = ["MON 3/17","TUE 3/18","WED 3/19","THU 3/20","TODAY","SAT 3/22","SUN 3/23"]
+// ─── DYNAMIC DATES — always centered on today ────────────────────────────────
+function generateDates() {
+  const today = new Date()
+  const days = []
+  const dayNames = ['SUN','MON','TUE','WED','THU','FRI','SAT']
+
+  for (let i = -3; i <= 3; i++) {
+    const d = new Date(today)
+    d.setDate(today.getDate() + i)
+    const dayDate = `${dayNames[d.getDay()]} ${d.getMonth()+1}/${d.getDate()}`
+    const label = i === 0
+      ? `TODAY · ${dayDate}`
+      : dayDate
+    days.push({ label, date: d, isToday: i === 0 })
+  }
+  return days
+}
+
+export const DATE_ENTRIES = generateDates()
+export const DATES = DATE_ENTRIES.map(d => d.label)
+
+// ─── MOCK POLLS (fallback when scrapers haven't populated Firestore) ─────────
+function makeEntries(standings) {
+  return standings.map(s => ({
+    rank:     s.rank,
+    team:     s.team,
+    record:   `${s.w}-${s.l}`,
+    points:   '',
+    prevRank: null,
+    movement: 0,
+  }))
+}
+
+export const MOCK_POLLS_M = {
+  coachesPolls: [
+    { pollId: 'imlca',            source: 'USILA Coaches Poll (sample)',  entries: makeEntries(STANDINGS_M), fetchedAt: Date.now() },
+    { pollId: 'inside-lacrosse-m', source: 'KANE Media Poll (sample)',    entries: makeEntries(STANDINGS_M), fetchedAt: Date.now() },
+  ],
+  rpi: {
+    entries: makeEntries(STANDINGS_M).map((e, i) => ({ ...e, conf: 'ACC', rank: i + 1 })),
+    updatedAt: 'Sample Data',
+    fetchedAt: Date.now(),
+  },
+}
+
+export const MOCK_POLLS_W = {
+  coachesPolls: [
+    { pollId: 'iwlca',            source: 'IWLCA Coaches Poll (sample)', entries: makeEntries(STANDINGS_W), fetchedAt: Date.now() },
+    { pollId: 'inside-lacrosse-w', source: 'KANE Media Poll (sample)',   entries: makeEntries(STANDINGS_W), fetchedAt: Date.now() },
+  ],
+  rpi: {
+    entries: makeEntries(STANDINGS_W).map((e, i) => ({ ...e, conf: 'ACC', rank: i + 1 })),
+    updatedAt: 'Sample Data',
+    fetchedAt: Date.now(),
+  },
+}
 
 export const SCORING_PLAYS = [
   {qtr:"Q3 10:21",team:"MD", desc:"C. Mullen (unassisted)",    score:"9-7"},

@@ -33,6 +33,91 @@ const ESPN_SLUGS = {
 
 const BASE = 'https://site.api.espn.com/apis/site/v2/sports/lacrosse'
 
+// ── Team → Conference lookup ────────────────────────────────────────────────
+// ESPN doesn't reliably provide conference for lacrosse games.
+// We look up each team name against this map (built from schoolUrls.js).
+// Keys are lowercase; includes common ESPN short-name aliases.
+const TEAM_CONF_M = {
+  "air force":"ASUN","albany":"America East","army":"Patriot","army west point":"Patriot",
+  "bellarmine":"ASUN","binghamton":"America East","boston u":"Patriot","boston u.":"Patriot",
+  "boston university":"Patriot","brown":"Ivy League","bryant":"America East","bucknell":"Patriot",
+  "canisius":"MAAC","cleveland state":"NEC","cleveland st":"NEC","colgate":"Patriot",
+  "cornell":"Ivy League","dartmouth":"Ivy League","delaware":"Atlantic 10","denver":"Big East",
+  "detroit mercy":"NEC","detroit":"NEC","drexel":"CAA","duke":"ACC","fairfield":"CAA",
+  "georgetown":"Big East","hampton":"CAA","harvard":"Ivy League","high point":"Atlantic 10",
+  "hobart":"Atlantic 10","hofstra":"CAA","holy cross":"Patriot","iona":"MAAC",
+  "jacksonville":"ASUN","johns hopkins":"Big Ten","hopkins":"Big Ten","jhu":"Big Ten",
+  "lafayette":"Patriot","le moyne":"NEC","lehigh":"Patriot","liu":"NEC",
+  "loyola maryland":"Patriot","loyola":"Patriot","manhattan":"MAAC","marist":"MAAC",
+  "marquette":"Big East","maryland":"Big Ten","massachusetts":"Atlantic 10","umass":"Atlantic 10",
+  "mercer":"ASUN","mercyhurst":"NEC","merrimack":"MAAC","michigan":"Big Ten",
+  "monmouth":"CAA","mount st. mary's":"MAAC","mt st mary's":"MAAC","njit":"America East",
+  "navy":"Patriot","north carolina":"ACC","unc":"ACC","notre dame":"ACC",
+  "ohio state":"Big Ten","ohio st":"Big Ten","penn state":"Big Ten","penn st":"Big Ten",
+  "pennsylvania":"Ivy League","penn":"Ivy League","princeton":"Ivy League",
+  "providence":"Big East","queens":"ASUN","queens (nc)":"ASUN","quinnipiac":"MAAC",
+  "richmond":"Atlantic 10","robert morris":"NEC","rutgers":"Big Ten",
+  "sacred heart":"MAAC","saint joseph's":"Atlantic 10","st. joseph's":"Atlantic 10",
+  "siena":"MAAC","st. bonaventure":"Atlantic 10","st bonaventure":"Atlantic 10",
+  "st. john's":"Big East","st. john's (ny)":"Big East","stony brook":"CAA",
+  "syracuse":"ACC","towson":"CAA","umbc":"America East","umass lowell":"America East",
+  "utah":"ASUN","vmi":"NEC","vermont":"America East","villanova":"Big East",
+  "virginia":"ACC","wagner":"NEC","yale":"Ivy League",
+}
+
+const TEAM_CONF_W = {
+  "akron":"MAC","albany":"America East","american":"Patriot","arizona state":"Big 12",
+  "arizona st":"Big 12","army":"Patriot","army west point":"Patriot","austin peay":"ASUN",
+  "binghamton":"America East","boston college":"ACC","boston university":"Patriot","boston u":"Patriot",
+  "brown":"Ivy League","bryant":"America East","bucknell":"Patriot","butler":"Big East",
+  "california":"ACC","cal":"ACC","campbell":"CAA","canisius":"MAAC",
+  "central connecticut":"NEC","central conn":"NEC","central michigan":"MAC","charlotte":"American",
+  "cincinnati":"Big 12","clemson":"ACC","coastal carolina":"ASUN","colgate":"Patriot",
+  "colorado":"Big 12","columbia":"Ivy League","cornell":"Ivy League","dartmouth":"Ivy League",
+  "davidson":"Atlantic 10","delaware state":"NEC","delaware st":"NEC","delaware":"ASUN",
+  "denver":"Big East","detroit mercy":"NEC","detroit":"NEC","drexel":"CAA","duke":"ACC",
+  "duquesne":"Atlantic 10","east carolina":"American","eastern michigan":"MAC","elon":"CAA",
+  "fdu":"NEC","fairfield":"MAAC","florida state":"ACC","florida st":"ACC","florida":"Big 12",
+  "furman":"Big South","gardner-webb":"Big South","george mason":"Atlantic 10",
+  "george washington":"Atlantic 10","georgetown":"Big East","harvard":"Ivy League",
+  "high point":"Big South","hofstra":"CAA","holy cross":"Patriot","howard":"NEC",
+  "iona":"MAAC","jacksonville":"ASUN","james madison":"American","jmu":"American",
+  "johns hopkins":"Big Ten","hopkins":"Big Ten","kennesaw state":"ASUN","kennesaw st":"ASUN",
+  "kent state":"MAC","kent st":"MAC","liu":"NEC","la salle":"Atlantic 10",
+  "lafayette":"Patriot","le moyne":"NEC","lehigh":"Patriot","liberty":"ASUN",
+  "lindenwood":"ASUN","longwood":"Big South","louisville":"ACC",
+  "loyola maryland":"Patriot","loyola":"Patriot","manhattan":"MAAC","marist":"MAAC",
+  "marquette":"Big East","maryland":"Big Ten","massachusetts":"MAC","umass":"MAC",
+  "mercer":"Big South","mercyhurst":"NEC","merrimack":"MAAC","michigan":"Big Ten",
+  "monmouth":"CAA","mount st. mary's":"MAAC","mt st mary's":"MAAC","navy":"Patriot",
+  "new hampshire":"America East","unh":"America East","new haven":"NEC","niagara":"MAAC",
+  "north carolina":"ACC","unc":"ACC","northwestern":"Big Ten","notre dame":"ACC",
+  "ohio state":"Big Ten","ohio st":"Big Ten","old dominion":"American","odu":"American",
+  "oregon":"Big Ten","penn state":"Big Ten","penn st":"Big Ten","pennsylvania":"Ivy League",
+  "penn":"Ivy League","pittsburgh":"ACC","pitt":"ACC","presbyterian":"Big South",
+  "princeton":"Ivy League","queens":"ASUN","queens (nc)":"ASUN","quinnipiac":"MAAC",
+  "radford":"ASUN","rhode island":"Atlantic 10","richmond":"Atlantic 10","rider":"MAAC",
+  "robert morris":"MAC","rutgers":"Big Ten","sacred heart":"MAAC",
+  "saint joseph's":"Atlantic 10","st. joseph's":"Atlantic 10",
+  "san diego state":"Big 12","sdsu":"Big 12","siena":"MAAC",
+  "south florida":"American","usf":"American","southern california":"Big Ten","usc":"Big Ten",
+  "st. bonaventure":"Atlantic 10","st bonaventure":"Atlantic 10","stanford":"ACC",
+  "stetson":"ASUN","stonehill":"NEC","stony brook":"CAA","syracuse":"ACC",
+  "temple":"American","towson":"CAA","uc davis":"Big 12","umbc":"America East",
+  "umass lowell":"America East","uconn":"Big East","connecticut":"Big East",
+  "vcu":"Atlantic 10","vanderbilt":"American","vermont":"America East",
+  "villanova":"Big East","virginia tech":"ACC","va tech":"ACC","virginia":"ACC",
+  "wagner":"NEC","william & mary":"CAA","winthrop":"Big South","wofford":"Big South",
+  "xavier":"MAAC","yale":"Ivy League","youngstown state":"MAC","youngstown st":"MAC",
+}
+
+function lookupConference(teamName, gender) {
+  if (!teamName) return ''
+  const key = teamName.toLowerCase()
+  const map = gender === 'W' ? TEAM_CONF_W : TEAM_CONF_M
+  return map[key] || ''
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function espnStatus(comp) {
@@ -71,10 +156,15 @@ function espnRank(competitor) {
   return rank && rank < 99 ? rank : null
 }
 
-function espnConference(comp) {
-  // ESPN buries conference inside notes or groups — best effort
-  const note = comp?.notes?.[0]?.headline || ''
-  return note || ''
+function espnConference(comp, gender) {
+  // ESPN rarely provides conference for lacrosse — look up from our team DB
+  const competitors = comp?.competitors || []
+  const away = competitors.find(c => c.homeAway === 'away') || competitors[0] || {}
+  const home = competitors.find(c => c.homeAway === 'home') || competitors[1] || {}
+  const awayName = away.team?.shortDisplayName || away.team?.displayName || ''
+  const homeName = home.team?.shortDisplayName || home.team?.displayName || ''
+  // Prefer home team's conference (it's their game), fall back to away
+  return lookupConference(homeName, gender) || lookupConference(awayName, gender) || ''
 }
 
 function espnLocation(comp) {
@@ -107,7 +197,7 @@ function normalizeGame(event, gender) {
     period:   espnPeriod(comp),
 
     // ── Context ──
-    conf:     espnConference(comp),
+    conf:     espnConference(comp, gender),
     loc:      espnLocation(comp),
     gender,
 

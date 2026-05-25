@@ -1,26 +1,27 @@
-import { useState } from 'react'
-import { useScores, useStandings } from '../hooks/useScores.jsx'
-import { STATS_M, STATS_W, DATES, CONFERENCES_M, CONFERENCES_W } from '../data/mockData.js'
-import { GameCard, GameModal, chip, ac } from '../components/shared.jsx'
+import { useState, useEffect } from 'react'
+import { useScores, useStandings, useStatLeaders } from '../hooks/useScores.jsx'
+import { DATE_ENTRIES, CONFERENCES_M, CONFERENCES_W } from '../data/mockData.js'
+import { GameCard, GameModal, CollapsibleFilter, ac } from '../components/shared.jsx'
 
 function SourceBadge({ source, error }) {
-  if (!source) return null
-  const isLive = source === 'espn'
+  if (!source || source === 'loading') return null
+  const isNcaa = source === 'ncaa'
+  const isEmpty = source === 'empty'
   return (
     <div style={{
-      display:'inline-flex', alignItems:'center', gap:5,
-      fontFamily:"'IBM Plex Mono',monospace", fontSize:10,
-      color: isLive ? 'var(--accent)' : 'var(--muted)',
-      marginBottom:16,
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+      color: isNcaa ? 'var(--accent)' : 'var(--muted)',
+      marginBottom: 16,
     }}>
       <span style={{
-        width:6, height:6, borderRadius:'50%',
-        background: isLive ? 'var(--accent)' : 'var(--muted)',
-        display:'inline-block',
-        ...(isLive ? {animation:'blink 2s infinite'} : {}),
-      }}/>
-      {isLive ? 'Live data · ESPN' : 'Demo data · no live source connected'}
-      {error && <span style={{color:'var(--yellow)',marginLeft:4}}>⚠ {error}</span>}
+        width: 6, height: 6, borderRadius: '50%',
+        background: isNcaa ? 'var(--accent)' : 'var(--muted)',
+        display: 'inline-block',
+        ...(isNcaa ? { animation: 'blink 2s infinite' } : {}),
+      }} />
+      {isNcaa ? 'Live data · NCAA' : isEmpty ? 'No games scheduled today' : 'Loading...'}
+      {error && <span style={{ color: 'var(--yellow)', marginLeft: 4 }}>⚠ {error}</span>}
     </div>
   )
 }
@@ -41,11 +42,23 @@ function GameSkeleton() {
 }
 
 export default function ScoresPage({ gender, division, isW, onAuthClick }) {
-  const [activeDate, setActiveDate] = useState('TODAY')
+  const todayIdx = DATE_ENTRIES.findIndex(d => d.isToday)
+  const [activeDateIdx, setActiveDateIdx] = useState(todayIdx >= 0 ? todayIdx : 3)
   const [activeConf, setActiveConf] = useState('All')
   const [selectedId, setSelectedId] = useState(null)
 
-  const { games, loading, error, source } = useScores(gender)
+  // Reset conference filter when division or gender changes (conferences differ across divisions)
+  useEffect(() => { setActiveConf('All') }, [division, gender])
+
+  // Convert selected date to YYYYMMDD for ESPN API
+  const activeEntry = DATE_ENTRIES[activeDateIdx]
+  const activeDate  = activeEntry?.label
+  const dateObj     = activeEntry?.date
+  const dateParam   = dateObj
+    ? `${dateObj.getFullYear()}${String(dateObj.getMonth()+1).padStart(2,'0')}${String(dateObj.getDate()).padStart(2,'0')}`
+    : undefined
+
+  const { games, loading, error, source } = useScores(gender, dateParam, division)
   const { standings } = useStandings(gender)
 
   const confs    = isW ? CONFERENCES_W : CONFERENCES_M
@@ -54,17 +67,17 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
   const final    = filtered.filter(g => g.status === 'final')
   const upcoming = filtered.filter(g => g.status === 'upcoming')
   const selected = selectedId ? games.find(g => g.id === selectedId) : null
-  const performers = (isW ? STATS_W : STATS_M).goals.slice(0,4)
-  const ac_ = chip(isW)
+  const { rows: goalLeaders, source: statsSource } = useStatLeaders(gender, 'goals')
+  const performers = goalLeaders.slice(0, 4)
 
   return (
     <>
       <div className="date-bar">
-        <button className="date-arrow">‹</button>
-        {DATES.map(d=>(
-          <button key={d} className={`date-btn ${activeDate===d?`active ${isW?'w':''}`:''}` } onClick={()=>setActiveDate(d)}>{d}</button>
+        <button className="date-arrow" onClick={()=>setActiveDateIdx(i=>Math.max(0,i-1))}>‹</button>
+        {DATE_ENTRIES.map((d,i)=>(
+          <button key={d.label} className={`date-btn ${activeDateIdx===i?`active ${isW?'w':''}`:''}` } onClick={()=>setActiveDateIdx(i)}>{d.label}</button>
         ))}
-        <button className="date-arrow">›</button>
+        <button className="date-arrow" onClick={()=>setActiveDateIdx(i=>Math.min(DATE_ENTRIES.length-1,i+1))}>›</button>
       </div>
 
       <div className="page-layout">
@@ -72,10 +85,11 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
           <SourceBadge source={source} error={error}/>
 
           <div className="filter-row">
-            <span className="filter-label">Conference</span>
-            {confs.map(c=>(
-              <button key={c} className={`filter-chip ${activeConf===c?ac_:''}`} onClick={()=>setActiveConf(c)}>{c}</button>
-            ))}
+            <CollapsibleFilter
+              label="Conference"
+              options={confs.map(c => ({ value: c, label: c }))}
+              value={activeConf} onChange={setActiveConf} isW={isW}
+            />
           </div>
 
           {loading && [1,2,3].map(i=><GameSkeleton key={i}/>)}
@@ -115,22 +129,28 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
         <div className="sidebar">
           <div className="widget">
             <div className="widget-hd">
-              <span className="widget-title">Top 10</span>
+              <span className="widget-title">AP Top 20</span>
               <span className="widget-sub">{gender==='M'?"Men's":"Women's"} · D{division}</span>
             </div>
-            <table className="std-table">
-              <thead><tr><th>Team</th><th>W</th><th>L</th><th>Streak</th></tr></thead>
-              <tbody>
-                {standings.map(s=>(
-                  <tr key={s.rank}>
-                    <td><span className="std-rank">{s.rank}</span>{s.team}</td>
-                    <td style={{color:'var(--text)'}}>{s.w}</td>
-                    <td>{s.l}</td>
-                    <td style={{color:s.streak?.startsWith?.('W')?ac(isW):'var(--red)'}}>{s.streak}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {standings.length === 0 ? (
+              <div style={{padding:'20px 14px',fontFamily:"'Barlow'",fontSize:12,color:'var(--red)',textAlign:'center'}}>
+                NO DATA — polls/standings not yet scraped
+              </div>
+            ) : (
+              <table className="std-table">
+                <thead><tr><th>Team</th><th>W</th><th>L</th><th>Streak</th></tr></thead>
+                <tbody>
+                  {standings.map(s=>(
+                    <tr key={s.rank}>
+                      <td><span className="std-rank">{s.rank}</span>{s.team}</td>
+                      <td style={{color:'var(--text)'}}>{s.w}</td>
+                      <td>{s.l}</td>
+                      <td style={{color:s.streak?.startsWith?.('W')?ac(isW):'var(--red)'}}>{s.streak}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
           <div className="widget">
@@ -138,7 +158,11 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
               <span className="widget-title">Goals Leaders</span>
               <span className="widget-sub">2026 · D{division}</span>
             </div>
-            {performers.map((p,i)=>(
+            {performers.length === 0 ? (
+              <div style={{padding:'20px 14px',fontFamily:"'Barlow'",fontSize:12,color:'var(--red)',textAlign:'center'}}>
+                NO DATA — playerStats not yet scraped
+              </div>
+            ) : performers.map((p,i)=>(
               <div key={i} className="perf-row">
                 <div className={`perf-num ${isW?'w':''}`}>{p.g}</div>
                 <div className="perf-info">

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTeams, ALERT_LEVELS, ALERT_LABELS } from '../hooks/useTeams.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
-import { makeGames } from '../data/mockData.js'
+import { useScores } from '../hooks/useScores.jsx'
 import { GameCard, GameModal, ac } from '../components/shared.jsx'
 
 const CSS = `
@@ -45,6 +45,10 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
   const { followedList, followedTeams, unfollowTeam, setAlertLevel, isFollowing } = useTeams()
   const [selectedId, setSelectedId] = useState(null)
 
+  // Hooks must be called unconditionally (React rules of hooks)
+  const { games: mensGames } = useScores('M')
+  const { games: womensGames } = useScores('W')
+
   if (!user) {
     return (
       <>
@@ -58,8 +62,8 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
     )
   }
 
-  // get all games across both genders, find ones matching followed teams
-  const allGames = [...makeGames('M'), ...makeGames('W')]
+  // get all games across both genders from real data sources
+  const allGames = [...mensGames, ...womensGames]
   const followedNames = new Set(followedList.map(t => t.name?.toLowerCase()))
 
   const myGames = allGames.filter(g =>
@@ -205,7 +209,7 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
         </div>
       </div>
 
-      {selected && <GameModal game={selected} onClose={() => setSelectedId(null)} isW={selected.gender === 'W'} />}
+      {selected && <GameModal game={selected} onClose={() => setSelectedId(null)} isW={selected.gender === 'W'} espnId={selected.espnId} gender={selected.gender} />}
     </>
   )
 }

@@ -9,6 +9,10 @@
     <meta property="og:description" content="Live scores, stats, and schedules for college lacrosse. Men's & Women's. D1, D2, D3." />
     <meta property="og:url" content="https://creasefeed.com" />
     <title>CreaseFeed — Feed the Crease</title>
+    <script>
+      // Apply saved theme before paint to avoid a flash. Light is the default.
+      try { if (localStorage.getItem('cf-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

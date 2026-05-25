@@ -3,3 +3,12 @@ dist
 .env
 .env.local
 .DS_Store
+
+# Local tooling / build artifacts
+.firebase
+.claude
+vite.config.js.timestamp-*.mjs
+
+# Binary data references — kept in Drive / local, not git
+*.xlsx
+*.numbers

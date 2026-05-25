@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId} {
+      // Read own doc only
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Create own doc, but cannot set any Stripe/Pro fields on creation
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && !request.resource.data.keys().hasAny([
+                      'pro',
+                      'proPlan',
+                      'proSince',
+                      'proCancelledAt',
+                      'stripeCustomerId',
+                      'stripeSubscriptionId',
+                      'stripeSubscriptionStatus',
+                      'stripePaymentFailed'
+                    ]);
+
+      // Update own doc, but cannot modify any Stripe/Pro fields
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                      'pro',
+                      'proPlan',
+                      'proSince',
+                      'proCancelledAt',
+                      'stripeCustomerId',
+                      'stripeSubscriptionId',
+                      'stripeSubscriptionStatus',
+                      'stripePaymentFailed'
+                    ]);
+
+      // No client-side deletes
+      allow delete: if false;
+    }
+
+    match /games/{gameId} {
+      allow read: if true;
+    }
+
+    match /playerStats/{id} {
+      allow read: if true;
+    }
+
+    match /records/{gender} {
+      allow read: if true;
+    }
+
+    match /polls/{pollId} {
+      allow read: if true;
+      match /history/{week} {
+        allow read: if true;
+      }
+    }
+
+    match /rpi/{pollId} {
+      allow read: if true;
+      match /history/{week} {
+        allow read: if true;
+      }
+    }
+
+    match /errors/{id} {
+      allow read: if request.auth != null;
+    }
+
+  }
+}
