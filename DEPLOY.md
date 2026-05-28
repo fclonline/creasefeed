@@ -202,3 +202,5 @@ From this point on:
 - Merge PR → **automatic production deploy**
 
 This is identical to the Vercel experience, on Firebase.
+
+Canonical deploy method is manual firebase deploy. The GitHub Actions workflow exists but is manual-trigger only — do not re-enable auto-deploy without first verifying GitHub Secrets (FIREBASE_SERVICE_ACCOUNT, VITE_FIREBASE_) are current.

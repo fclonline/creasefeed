@@ -152,4 +152,8 @@ Update this document when:
 - The target user definition shifts
 - Available build time changes significantly
 
-*Last updated: April 2026*
+## 11. Github
+Every working directory must be a git repo connected to GitHub. If git status returns "not a git repository," stop and fix that before any other work.
+Every session ends with git push. Production-deployed code that isn't on GitHub is one laptop incident away from being lost.
+
+*Last updated: May 2026*
