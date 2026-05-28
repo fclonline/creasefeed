@@ -315,7 +315,7 @@ export function ContextBar({ page, gender, setGender, division, setDivision, isW
 }
 
 // ─── GAME CARD ───────────────────────────────────────────────────────────────
-export function GameCard({ game, onClick, isW }) {
+export function GameCard({ game, onClick, isW, showGender = false }) {
   const hasScore = game.status !== 'upcoming'
   const awayWin  = hasScore && game.away.score > game.home.score
   return (
@@ -325,6 +325,9 @@ export function GameCard({ game, onClick, isW }) {
           {game.status === 'live' && <span className={`live-dot ${isW ? 'w' : ''}`} />}
           {game.status === 'upcoming' ? (game.time || game.period || 'TBA') : game.period}
         </div>
+        {showGender && (
+          <span className={`gc-gender ${isW ? 'w' : 'm'}`}>{isW ? "Women's" : "Men's"}</span>
+        )}
         <div className="gc-conf">{game.conf}</div>
       </div>
       <div className="gc-teams">

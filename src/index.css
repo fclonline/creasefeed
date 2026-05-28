@@ -184,6 +184,9 @@ input { font-family: inherit; }
 .gc-status.upcoming { color:var(--yellow); }
 .live-dot   { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:blink 1.5s infinite; flex-shrink:0; }
 .live-dot.w { background:var(--women); }
+.gc-gender  { margin-left:auto; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; padding:1px 7px; border:1px solid; flex-shrink:0; }
+.gc-gender.m { color:var(--accent); border-color:var(--accent-border); background:var(--accent-bg); }
+.gc-gender.w { color:var(--women); border-color:var(--women-border); background:var(--women-bg); }
 .gc-conf    { font-family:'Barlow Condensed',sans-serif; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-left:auto; }
 .gc-teams   { display:flex; flex-direction:column; gap:5px; }
 .gc-team-row{ display:flex; align-items:center; gap:10px; }

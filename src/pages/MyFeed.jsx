@@ -32,6 +32,17 @@ const CSS = `
 .fw-unfollow:hover { color: var(--red); }
 .fw-gender-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
+/* gender toggle (My Feed only) */
+.myfeed-genderbar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+.myfeed-gender-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+.myfeed-gender-toggle { display: flex; border: 1px solid var(--border2); overflow: hidden; }
+.myfeed-gtab { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 16px; color: var(--muted); border-right: 1px solid var(--border2); transition: all .15s; background: transparent; }
+.myfeed-gtab:last-child { border-right: none; }
+.myfeed-gtab:hover { color: var(--text); background: var(--surface2); }
+.myfeed-gtab.active-all { background: var(--surface3); color: var(--text); }
+.myfeed-gtab.active-m { background: var(--accent-bg); color: var(--accent); }
+.myfeed-gtab.active-w { background: var(--women-bg); color: var(--women); }
+
 /* game card following badge */
 .gc-following-badge {
   font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 9px;
@@ -44,6 +55,7 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
   const { user, pro } = useAuth()
   const { followedList, followedTeams, unfollowTeam, setAlertLevel, isFollowing } = useTeams()
   const [selectedId, setSelectedId] = useState(null)
+  const [genderFilter, setGenderFilter] = useState('all') // 'all' | 'M' | 'W'
 
   // Hooks must be called unconditionally (React rules of hooks)
   const { games: mensGames } = useScores('M')
@@ -64,15 +76,25 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
 
   // get all games across both genders from real data sources
   const allGames = [...mensGames, ...womensGames]
-  const followedNames = new Set(followedList.map(t => t.name?.toLowerCase()))
+  const followedNames = new Set(followedList.map(t => t.name?.toLowerCase()).filter(Boolean))
 
   const myGames = allGames.filter(g =>
-    followedNames.has(g.away.name.toLowerCase()) ||
-    followedNames.has(g.home.name.toLowerCase())
+    followedNames.has(g.away?.name?.toLowerCase()) ||
+    followedNames.has(g.home?.name?.toLowerCase())
   )
-  const live     = myGames.filter(g => g.status === 'live')
-  const final    = myGames.filter(g => g.status === 'final')
-  const upcoming = myGames.filter(g => g.status === 'upcoming')
+
+  // Show the gender toggle only when the feed actually contains both men's and
+  // women's games (matching is by team name, so a followed name can surface both).
+  const feedHasBoth = myGames.some(g => g.gender === 'M') && myGames.some(g => g.gender === 'W')
+  const genderFiltered = (feedHasBoth && genderFilter !== 'all')
+    ? myGames.filter(g => g.gender === genderFilter)
+    : myGames
+  // In the "All" view (with mixed games), denote each game's gender on the card.
+  const showGenderOnCards = feedHasBoth && genderFilter === 'all'
+
+  const live     = genderFiltered.filter(g => g.status === 'live')
+  const final    = genderFiltered.filter(g => g.status === 'final')
+  const upcoming = genderFiltered.filter(g => g.status === 'upcoming')
   const selected = selectedId ? allGames.find(g => g.id === selectedId) : null
 
   return (
@@ -96,38 +118,66 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
             </div>
           ) : (
             <>
-              {live.length > 0 && (
-                <>
-                  <div className="sec-header">
-                    <span className="sec-title">Your Teams — Live</span>
-                    <span className="live-pill">LIVE</span>
-                    <span className="count-pill">{live.length}</span>
+              {feedHasBoth && (
+                <div className="myfeed-genderbar">
+                  <span className="myfeed-gender-label">Show</span>
+                  <div className="myfeed-gender-toggle">
+                    {[{ v: 'all', l: 'All' }, { v: 'M', l: "Men's" }, { v: 'W', l: "Women's" }].map(o => (
+                      <button
+                        key={o.v}
+                        className={`myfeed-gtab ${genderFilter === o.v ? (o.v === 'all' ? 'active-all' : o.v === 'M' ? 'active-m' : 'active-w') : ''}`}
+                        onClick={() => setGenderFilter(o.v)}
+                      >
+                        {o.l}
+                      </button>
+                    ))}
                   </div>
-                  <div className="games-stack">
-                    {live.map(g => <GameCard key={g.id} game={g} isW={g.gender === 'W'} onClick={() => setSelectedId(g.id)} />)}
-                  </div>
-                </>
+                </div>
               )}
-              {final.length > 0 && (
+
+              {genderFiltered.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '50px 20px' }}>
+                  <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 20, marginBottom: 6 }}>
+                    No {genderFilter === 'M' ? "men's" : "women's"} games today for your teams
+                  </div>
+                  <div style={{ fontFamily: "'Barlow'", fontSize: 13, color: 'var(--mid)' }}>Switch the filter above or check the Schedule tab.</div>
+                </div>
+              ) : (
                 <>
-                  <div className="sec-header">
-                    <span className="sec-title">Your Teams — Final</span>
-                    <span className="count-pill">{final.length}</span>
-                  </div>
-                  <div className="games-stack">
-                    {final.map(g => <GameCard key={g.id} game={g} isW={g.gender === 'W'} onClick={() => setSelectedId(g.id)} />)}
-                  </div>
-                </>
-              )}
-              {upcoming.length > 0 && (
-                <>
-                  <div className="sec-header">
-                    <span className="sec-title">Your Teams — Upcoming</span>
-                    <span className="count-pill">{upcoming.length}</span>
-                  </div>
-                  <div className="games-stack">
-                    {upcoming.map(g => <GameCard key={g.id} game={g} isW={g.gender === 'W'} onClick={() => setSelectedId(g.id)} />)}
-                  </div>
+                  {live.length > 0 && (
+                    <>
+                      <div className="sec-header">
+                        <span className="sec-title">Your Teams — Live</span>
+                        <span className="live-pill">LIVE</span>
+                        <span className="count-pill">{live.length}</span>
+                      </div>
+                      <div className="games-stack">
+                        {live.map(g => <GameCard key={g.id} game={g} isW={g.gender === 'W'} showGender={showGenderOnCards} onClick={() => setSelectedId(g.id)} />)}
+                      </div>
+                    </>
+                  )}
+                  {final.length > 0 && (
+                    <>
+                      <div className="sec-header">
+                        <span className="sec-title">Your Teams — Final</span>
+                        <span className="count-pill">{final.length}</span>
+                      </div>
+                      <div className="games-stack">
+                        {final.map(g => <GameCard key={g.id} game={g} isW={g.gender === 'W'} showGender={showGenderOnCards} onClick={() => setSelectedId(g.id)} />)}
+                      </div>
+                    </>
+                  )}
+                  {upcoming.length > 0 && (
+                    <>
+                      <div className="sec-header">
+                        <span className="sec-title">Your Teams — Upcoming</span>
+                        <span className="count-pill">{upcoming.length}</span>
+                      </div>
+                      <div className="games-stack">
+                        {upcoming.map(g => <GameCard key={g.id} game={g} isW={g.gender === 'W'} showGender={showGenderOnCards} onClick={() => setSelectedId(g.id)} />)}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </>

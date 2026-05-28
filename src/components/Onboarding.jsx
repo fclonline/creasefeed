@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { searchPrograms } from '../data/programs.js'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { searchPrograms, getProgramById } from '../data/programs.js'
 import { useTeams } from '../hooks/useTeams.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 
@@ -120,12 +120,26 @@ const CSS = `
 
 export default function Onboarding({ onDone }) {
   const { user, pro } = useAuth()
-  const { completeOnboarding } = useTeams()
-  const [selected, setSelected] = useState(new Set())
+  const { completeOnboarding, followedTeams, loading } = useTeams()
+  // Pre-select the teams the user already follows so editing starts from their
+  // current set (they actively unselect to remove). Captures synchronously if
+  // follows are already loaded; the effect below seeds them once they arrive.
+  const [selected, setSelected] = useState(() => new Set(Object.keys(followedTeams || {})))
   const [query, setQuery]       = useState('')
   const [gFilter, setGFilter]   = useState('all')
   const [dFilter, setDFilter]   = useState('all')
   const [saving, setSaving]     = useState(false)
+  const seeded = useRef(Object.keys(followedTeams || {}).length > 0)
+
+  // Seed from followed teams once they finish loading (handles the async case
+  // where the user's follows aren't available on first render).
+  useEffect(() => {
+    if (seeded.current || loading) return
+    const ids = Object.keys(followedTeams || {})
+    if (ids.length === 0) return
+    seeded.current = true
+    setSelected(prev => (prev.size > 0 ? prev : new Set(ids)))
+  }, [loading, followedTeams])
 
   const FREE_LIMIT = 2
   const atLimit    = !pro && selected.size >= FREE_LIMIT
@@ -150,8 +164,6 @@ export default function Onboarding({ onDone }) {
     await completeOnboarding([...selected])
     onDone()
   }
-
-  const selectedPrograms = [...selected].map(id => results.find(p => p.id === id) || { id, name: id })
 
   return (
     <>
@@ -237,14 +249,14 @@ export default function Onboarding({ onDone }) {
             {selected.size === 0
               ? <div className="ob-sel-empty">No teams selected yet — pick the ones you follow</div>
               : [...selected].map(id => {
-                  const p = results.find(r => r.id === id)
+                  const p = getProgramById(id)
                   const isW = p?.gender === 'W'
                   return (
-                    <div key={id} className="ob-sel-tag" style={{ borderColor: isSel => isSel ? 'var(--accent)' : 'var(--border2)' }}>
+                    <div key={id} className="ob-sel-tag">
                       <span style={{ color: isW ? 'var(--women)' : 'var(--accent)', fontSize: 9, fontFamily: "'Barlow Condensed'", letterSpacing: '1px' }}>
                         {isW ? 'W' : 'M'} D{p?.div}
                       </span>
-                      {p?.short || id}
+                      {p?.short || p?.name || id}
                       <span className="ob-sel-remove" onClick={() => toggle(id)}>×</span>
                     </div>
                   )
