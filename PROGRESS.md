@@ -8,6 +8,18 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 
 ---
 
+## 2026-05-28
+
+### Done (committed; ⚠️ deploy pending Firebase CLI reauth)
+- **Fixed free-account login (email/password).** It was entirely non-functional: `useAuth` only had Google sign-in, and the modal's password field had no state + the "Continue with Email" button had no handler. Added `signUpEmail`/`signInEmail` (create + sign-in, optional display name) to `useAuth`, and rebuilt the modal email form: controlled inputs, working submit, **Create account ↔ Sign in toggle**, loading state, and plain-language Firebase error messages (incl. Google popup/unauthorized-domain). Free profile (`pro: false`) is created via the existing `onAuthStateChanged` path — separate from Pro.
+- Tested live in preview: create-account, sign-in, validation, and sign-out all work; Email/Password provider confirmed enabled. (Created throwaway test user `cf-test-20260528@example.com` — safe to delete in Firebase Console.)
+- ⚠️ **Not yet deployed** — `firebase deploy` failed with an expired CLI token; needs `firebase login --reauth`, then `firebase deploy --only hosting`.
+
+### Repo / setup
+- Connected the working folder `~/Downloads/Claude-Code/creasefeed` directly to git/GitHub (it wasn't under version control); this is now the single working copy. Disabled auto-deploy-on-push (workflow is manual-only).
+
+---
+
 ## 2026-05-24
 
 ### Shipped to production

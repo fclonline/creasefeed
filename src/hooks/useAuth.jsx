@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import {
   onAuthStateChanged,
   signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
   signOut as firebaseSignOut,
 } from 'firebase/auth'
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore'
@@ -65,11 +68,25 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  // Google popup sign-in
   const signIn  = () => signInWithPopup(auth, provider)
+
+  // Email/password — free profile creation + sign-in.
+  // The onAuthStateChanged handler above creates the free Firestore profile
+  // (pro: false) for any new user, so both methods land in the same place.
+  const signUpEmail = async (email, password, name) => {
+    const cred = await createUserWithEmailAndPassword(auth, email.trim(), password)
+    if (name && name.trim()) {
+      await updateProfile(cred.user, { displayName: name.trim() })
+    }
+    return cred
+  }
+  const signInEmail = (email, password) => signInWithEmailAndPassword(auth, email.trim(), password)
+
   const signOut = () => firebaseSignOut(auth)
 
   return (
-    <AuthContext.Provider value={{ user, pro, isNewUser, setIsNewUser, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, pro, isNewUser, setIsNewUser, loading, signIn, signUpEmail, signInEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   )

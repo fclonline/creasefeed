@@ -635,22 +635,64 @@ export function GameModal({ game, onClose, isW, espnId, gender }) {
 }
 
 // ─── AUTH MODAL ──────────────────────────────────────────────────────────────
+// Map Firebase auth error codes to plain-language messages.
+function friendlyAuthError(err) {
+  switch (err?.code) {
+    case 'auth/email-already-in-use': return 'That email already has an account — try signing in instead.'
+    case 'auth/invalid-email':        return 'Please enter a valid email address.'
+    case 'auth/weak-password':        return 'Password must be at least 6 characters.'
+    case 'auth/missing-password':     return 'Please enter a password.'
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':       return 'Incorrect email or password.'
+    case 'auth/too-many-requests':    return 'Too many attempts — please wait a moment and try again.'
+    case 'auth/operation-not-allowed':return 'Email sign-up isn’t enabled yet. (Admin: enable Email/Password in Firebase Auth.)'
+    case 'auth/popup-closed-by-user': return 'Sign-in window closed before finishing.'
+    case 'auth/popup-blocked':        return 'Your browser blocked the popup — allow popups and try again.'
+    case 'auth/unauthorized-domain':  return 'This site isn’t authorized for sign-in. (Admin: add the domain in Firebase Auth.)'
+    case 'auth/network-request-failed':return 'Network error — check your connection and try again.'
+    default: return err?.message ? err.message.replace(/^Firebase:\s*/, '').replace(/\s*\(auth\/.*\)\.?$/, '') : 'Something went wrong. Please try again.'
+  }
+}
+
 export function AuthModal({ mode, onClose, isW }) {
-  const { user, pro, signIn } = useAuth()
+  const { user, pro, signIn, signUpEmail, signInEmail } = useAuth()
   const [view, setView] = useState(mode === 'pro' ? 'pro' : 'signin')
+  const [emailMode, setEmailMode] = useState('signup') // 'signup' (create free profile) | 'signin'
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [authLoading, setAuthLoading] = useState(false)
   const color = ac(isW)
 
   const FUNCTIONS_BASE = 'https://us-east1-creasefeed.cloudfunctions.net'
 
   const handleGoogle = async () => {
+    setError('')
     try {
       await signIn()
       onClose()
     } catch (e) {
-      setError('Sign in failed. Please try again.')
+      setError(friendlyAuthError(e))
+    }
+  }
+
+  const handleEmailAuth = async (e) => {
+    if (e) e.preventDefault()
+    setError('')
+    if (!email.trim() || !password) { setError('Please enter your email and password.'); return }
+    if (emailMode === 'signup' && password.length < 6) { setError('Password must be at least 6 characters.'); return }
+    setAuthLoading(true)
+    try {
+      if (emailMode === 'signup') await signUpEmail(email, password, name)
+      else                        await signInEmail(email, password)
+      onClose()
+    } catch (err) {
+      setError(friendlyAuthError(err))
+    } finally {
+      setAuthLoading(false)
     }
   }
 
@@ -762,28 +804,65 @@ export function AuthModal({ mode, onClose, isW }) {
           </>
         ) : (
           <>
-            <div className="auth-title">Sign In</div>
-            <div className="auth-sub">Create a free account to follow your teams and get live alerts.</div>
+            <div className="auth-title">{emailMode === 'signup' ? 'Create your free account' : 'Welcome back'}</div>
+            <div className="auth-sub">
+              {emailMode === 'signup'
+                ? 'Free to follow your teams and get game alerts. No card required.'
+                : 'Sign in to your CreaseFeed account.'}
+            </div>
             <button className="btn-google" onClick={handleGoogle}>
               <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
               Continue with Google
             </button>
             <div className="auth-divider"><span>OR</span></div>
-            <div className="auth-email-form">
+            <form className="auth-email-form" onSubmit={handleEmailAuth}>
+              {emailMode === 'signup' && (
+                <input
+                  className={`auth-input ${isW ? 'w' : ''}`}
+                  type="text"
+                  placeholder="Name (optional)"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  autoComplete="name"
+                />
+              )}
               <input
                 className={`auth-input ${isW ? 'w' : ''}`}
                 type="email"
                 placeholder="Email address"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
+                autoComplete="email"
+                required
               />
-              <input className={`auth-input ${isW ? 'w' : ''}`} type="password" placeholder="Password" />
+              <input
+                className={`auth-input ${isW ? 'w' : ''}`}
+                type="password"
+                placeholder={emailMode === 'signup' ? 'Create a password (6+ characters)' : 'Password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                autoComplete={emailMode === 'signup' ? 'new-password' : 'current-password'}
+                required
+              />
               {error && <div className="auth-error">{error}</div>}
-              <button className={`btn-auth ${isW ? 'w' : ''}`}>Continue with Email</button>
+              <button className={`btn-auth ${isW ? 'w' : ''}`} type="submit" disabled={authLoading}>
+                {authLoading ? 'Please wait…' : emailMode === 'signup' ? 'Create free account' : 'Sign in'}
+              </button>
+            </form>
+            <div className="auth-switch" style={{ marginTop: 14 }}>
+              {emailMode === 'signup' ? (
+                <>Already have an account?{' '}
+                  <button className={isW ? 'w' : ''} onClick={() => { setEmailMode('signin'); setError('') }}>Sign in</button>
+                </>
+              ) : (
+                <>Need an account?{' '}
+                  <button className={isW ? 'w' : ''} onClick={() => { setEmailMode('signup'); setError('') }}>Create one free</button>
+                </>
+              )}
             </div>
-            <div className="auth-switch" style={{ marginTop: 16 }}>
+            <div className="auth-switch" style={{ marginTop: 8 }}>
               Want full access?{' '}
-              <button className={isW ? 'w' : ''} onClick={() => setView('pro')}>Try Pro free →</button>
+              <button className={isW ? 'w' : ''} onClick={() => setView('pro')}>See Pro →</button>
             </div>
           </>
         )}

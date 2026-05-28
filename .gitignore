@@ -8,6 +8,9 @@ dist
 .firebase
 .claude
 vite.config.js.timestamp-*.mjs
+firebase-debug.log
+*.log
+.fuse_hidden*
 
 # Binary data references — kept in Drive / local, not git
 *.xlsx
