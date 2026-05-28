@@ -18,6 +18,9 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 ### Notes
 - Throwaway test user `cf-test-20260528@example.com` created during auth testing — safe to delete in Firebase Console → Authentication.
 
+### ⏭️ Next session (Deemer's pick-up point)
+- **Scraping & data accuracy.** Make the data pipeline bulletproof and double-check that displayed scores/data are correct. Includes auditing the scrapers (`functions/src/scrapers/`) and the known women's `games` duplicate/fragmentation issue (women's team records gated to `—` until cleaned up).
+
 ### Repo / setup
 - Connected the working folder `~/Downloads/Claude-Code/creasefeed` directly to git/GitHub (it wasn't under version control); this is now the single working copy. Disabled auto-deploy-on-push (workflow is manual-only).
 
