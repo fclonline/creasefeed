@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Ticker, Navbar, ContextBar, AuthModal, Footer } from './components/shared.jsx'
+import { Ticker, Navbar, MobileNav, ContextBar, AuthModal, Footer } from './components/shared.jsx'
 import Onboarding   from './components/Onboarding.jsx'
 import ScoresPage   from './pages/Scores.jsx'
 import StatsPage    from './pages/Stats.jsx'
@@ -49,6 +49,8 @@ export default function App() {
       </main>
 
       <Footer />
+
+      <MobileNav page={page} setPage={setPage} isW={isW} followCount={followedList.length} />
 
       {authMode       && <AuthModal    mode={authMode} onClose={closeAuth} isW={isW} />}
       {shouldOnboard  && <Onboarding  onDone={handleOnboardingDone} />}

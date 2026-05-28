@@ -107,6 +107,66 @@ export function Navbar({ page, setPage, gender, division, isW, onAuthClick, foll
   )
 }
 
+// ─── MOBILE BOTTOM NAV ───────────────────────────────────────────────────────
+const NAV_ICONS = {
+  feed: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.58 1.1 6.47L12 17.4l-5.8 3.05 1.1-6.47-4.7-4.58 6.5-.95z" />
+    </svg>
+  ),
+  scores: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="1.5" />
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="6.5" y1="10" x2="9" y2="10" />
+      <line x1="15" y1="10" x2="17.5" y2="10" />
+    </svg>
+  ),
+  schedule: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.5" y="4.5" width="17" height="16" rx="1.5" />
+      <line x1="3.5" y1="9" x2="20.5" y2="9" />
+      <line x1="8" y1="2.5" x2="8" y2="6" />
+      <line x1="16" y1="2.5" x2="16" y2="6" />
+    </svg>
+  ),
+  stats: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="6" y1="20" x2="6" y2="13" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="18" y1="20" x2="18" y2="9" />
+    </svg>
+  ),
+}
+
+export function MobileNav({ page, setPage, isW, followCount = 0 }) {
+  const items = [
+    { key: 'feed',     label: 'My Feed',  badge: followCount > 0 ? followCount : null },
+    { key: 'scores',   label: 'Scores' },
+    { key: 'schedule', label: 'Schedule' },
+    { key: 'stats',    label: 'Stats' },
+  ]
+  return (
+    <nav className="mobile-nav">
+      {items.map(n => (
+        <button
+          key={n.key}
+          className={`mnav-item ${page === n.key ? 'active' : ''} ${page === n.key && isW ? 'w' : ''}`}
+          onClick={() => setPage(n.key)}
+          aria-label={n.label}
+          aria-current={page === n.key ? 'page' : undefined}
+        >
+          <span className="mnav-icon">
+            {NAV_ICONS[n.key]}
+            {n.badge && <span className={`mnav-badge ${isW ? 'w' : ''}`}>{n.badge}</span>}
+          </span>
+          <span className="mnav-label">{n.label}</span>
+        </button>
+      ))}
+    </nav>
+  )
+}
+
 // ─── CONTEXT BAR ────────────────────────────────────────────────────────────
 export function ContextBar({ gender, setGender, division, setDivision, isW }) {
   const ac = chip(isW)
