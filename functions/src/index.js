@@ -16,10 +16,16 @@
 
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { onRequest  } from 'firebase-functions/v2/https'
+import { defineSecret } from 'firebase-functions/params'
 import { fetchAllBoxScores, backfillBoxScores, processOneBoxScore } from './scrapers/ncaaBoxScores.js'
 import { scrapeAllPolls } from './scrapers/polls.js'
 import { fetchNcaaScores, backfillScoreboards } from './scrapers/ncaaScores.js'
 import { aggregateRecords } from './scrapers/aggregateRecords.js'
+import { runStatsInflationDiagnostic } from './diagnostics/statsInflation.js'
+
+// Shared-secret token for the read-only diagnostic endpoint. Set with:
+//   firebase functions:secrets:set DIAGNOSTIC_TOKEN
+const diagnosticToken = defineSecret('DIAGNOSTIC_TOKEN')
 
 // ── Stripe subscription functions ─────────────────────────────────────────────
 export { createCheckoutSession, stripeWebhook, createPortalSession } from './stripe.js'
@@ -176,6 +182,40 @@ export const triggerPolls = onRequest({
   console.log('[triggerPolls] Manual poll scrape triggered')
   const result = await scrapeAllPolls()
   res.json({ ok: true, result })
+})
+
+// ── HTTP trigger — READ-ONLY stats-inflation diagnostic ──────────────────────
+// Reports duplicate /games clusters and flags top-25 leaderboard players whose
+// stored aggregate gp exceeds their distinct game appearances. Writes exactly
+// one summary doc at /diagnostics/{timestamp}. Never mutates games/playerStats.
+//
+// Gated by a shared-secret token. Caller must pass DIAGNOSTIC_TOKEN as either
+// an `X-Diagnostic-Token` header or a `?token=` query param. Without the
+// secret, every request returns 403 — the function does no Firestore work.
+// Set the secret once with: `firebase functions:secrets:set DIAGNOSTIC_TOKEN`
+export const triggerStatsInflationDiagnostic = onRequest({
+  region: 'us-east1',
+  memory: '2GiB',
+  timeoutSeconds: 540,
+  cors: true,
+  invoker: 'public',
+  secrets: [diagnosticToken],
+}, async (req, res) => {
+  const expected = diagnosticToken.value()
+  const provided = req.get('X-Diagnostic-Token') || req.query.token || ''
+  if (!expected || provided !== expected) {
+    res.status(403).json({ ok: false, error: 'forbidden' })
+    return
+  }
+  console.log('[triggerStatsInflationDiagnostic] Read-only diagnostic triggered')
+  try {
+    const full = req.query.full === '1' || req.query.full === 'true'
+    const result = await runStatsInflationDiagnostic({ full })
+    res.json(result)
+  } catch (err) {
+    console.error('[triggerStatsInflationDiagnostic] failed:', err)
+    res.status(500).json({ ok: false, error: err.message })
+  }
 })
 
 // -- NCAA API Proxy -- fixes CORS for sdataprod.ncaa.com ------------------

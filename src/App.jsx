@@ -34,6 +34,12 @@ export default function App() {
     setShowOnboarding(false)
   }
 
+  const navigateToTeamDetail = (programId) => {
+    if (!programId) return
+    setSelectedTeamId(programId)
+    setPage('teams')
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Ticker   gender={gender} division={division} isW={isW} />
@@ -48,7 +54,7 @@ export default function App() {
       <main style={{ flex: 1 }}>
         {page === 'feed'     && <MyFeedPage   isW={isW} onEditTeams={() => setShowOnboarding(true)} onAuthClick={openAuth} />}
         {page === 'scores'   && <ScoresPage   gender={gender} division={division} isW={isW} onAuthClick={openAuth} />}
-        {page === 'stats'    && <StatsPage    gender={gender} division={division} isW={isW} />}
+        {page === 'stats'    && <StatsPage    gender={gender} division={division} isW={isW} onSelectTeam={navigateToTeamDetail} />}
         {page === 'schedule' && <SchedulePage gender={gender} division={division} isW={isW} />}
         {page === 'teams' && !selectedTeamId && <TeamsPage gender={gender} division={division} isW={isW} onAuthClick={openAuth} onSelectTeam={(id) => setSelectedTeamId(id)} />}
         {page === 'teams' && selectedTeamId && <TeamDetailPage teamId={selectedTeamId} isW={isW} onBack={() => setSelectedTeamId(null)} onAuthClick={openAuth} />}

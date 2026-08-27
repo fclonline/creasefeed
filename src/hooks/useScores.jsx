@@ -72,38 +72,46 @@ export function useStandings(gender) {
   return { standings, loading }
 }
 // ── useStatLeaders ────────────────────────────────────────────────────────────
-export function useStatLeaders(gender, tab) {
+// Mock-data fallback is gated to DEV only. In prod, an empty Firestore result
+// or a thrown query (e.g. a missing composite index during a build window)
+// resolves to an empty state — never populated fake rows that look like real
+// leaderboards.
+export function useStatLeaders(gender, tab, division = '1') {
   const [rows,    setRows]    = useState([])
   const [loading, setLoading] = useState(true)
-  const [source,  setSource]  = useState('mock')
+  const [source,  setSource]  = useState('loading')
   useEffect(() => {
     let cancelled = false
+    const useMock = (reason) => {
+      if (import.meta.env.DEV) {
+        const mock = gender === 'W' ? STATS_W : STATS_M
+        setRows(mock[tab] || mock.goals)
+        setSource('mock')
+      } else {
+        setRows([])
+        setSource(reason)
+      }
+    }
     ;(async () => {
       setLoading(true)
       try {
-        const data = await fetchStatLeaders(gender, tab)
+        const data = await fetchStatLeaders(gender, tab, division)
         if (!cancelled) {
           if (data && data.length > 0) {
             setRows(data)
             setSource('ncaa')
           } else {
-            const mock = gender === 'W' ? STATS_W : STATS_M
-            setRows(mock[tab] || mock.goals)
-            setSource('mock')
+            useMock('empty')
           }
         }
       } catch {
-        if (!cancelled) {
-          const mock = gender === 'W' ? STATS_W : STATS_M
-          setRows(mock[tab] || mock.goals)
-          setSource('mock')
-        }
+        if (!cancelled) useMock('error')
       } finally {
         if (!cancelled) setLoading(false)
       }
     })()
     return () => { cancelled = true }
-  }, [gender, tab])
+  }, [gender, tab, division])
   return { rows, loading, source }
 }
 // ── useGameDetail ────────────────────────────────────────────────────────────

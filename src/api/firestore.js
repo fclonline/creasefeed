@@ -189,14 +189,30 @@ export async function fetchAllPolls(gender, division = '1') {
   }
 }
 
+// Normalize the NCAA position code for display. The feed is inconsistent —
+// 'a', 'A', 'm', 'gk', 'g', 'Goalkeeper', '*' and '' all appear — so map the
+// known codes and fall back to a dash rather than surfacing raw junk.
+const POS_MAP = {
+  a: 'ATT', att: 'ATT', attack: 'ATT',
+  m: 'MID', mid: 'MID', midfield: 'MID', mf: 'MID',
+  d: 'DEF', def: 'DEF', defense: 'DEF',
+  g: 'GK', gk: 'GK', goalie: 'GK', goalkeeper: 'GK',
+  fo: 'FO', faceoff: 'FO', lsm: 'LSM',
+}
+function normPos(raw) {
+  const key = String(raw || '').trim().toLowerCase()
+  return POS_MAP[key] || '—'
+}
+
 // ── Fetch stat leaders from aggregated playerStats ────────────────────────────
-export async function fetchStatLeaders(gender, stat = 'goals') {
+export async function fetchStatLeaders(gender, stat = 'goals', division = '1') {
   try {
-    const orderField = stat === 'saves' ? 'sv' : stat === 'assists' ? 'assists' : 'goals'
+    const orderField = stat === 'saves' ? 'saves' : stat === 'assists' ? 'assists' : 'goals'
     const q = query(
       collection(db, 'playerStats'),
       where('gender', '==', gender),
       where('season', '==', SEASON),
+      where('div',    '==', String(division)),
       orderBy(orderField, 'desc'),
       limit(25)
     )
@@ -205,20 +221,30 @@ export async function fetchStatLeaders(gender, stat = 'goals') {
 
     return snap.docs.map((d, i) => {
       const r = d.data()
+      const saves    = r.saves        || 0
+      const ga       = r.goalsAllowed || 0
+      // `goalieMinutes` is a misnomer: the NCAA box score reports goalie time
+      // in SECONDS, and the aggregator stores it verbatim. GAA is therefore
+      // goals-against per 3600s, not per 60.
+      const gSecs    = r.goalieMinutes || 0
+      const svptotal = saves + ga
+      const svpct = svptotal > 0 ? (saves / svptotal).toFixed(3).replace(/^0\./, '.') : '—'
+      const gaa   = gSecs   > 0 ? (ga * 3600 / gSecs).toFixed(2) : '—'
       return {
         rank:   i + 1,
         name:   r.name,
-        team:   r.team,
-        pos:    r.pos || '—',
+        team:    r.teamName || r.team || '—',
+        teamSeo: r.teamSeo  || '',
+        pos:    normPos(r.position || r.pos),
         gp:     r.gp  || 0,
         g:      r.goals   || 0,
         a:      r.assists || 0,
         pts:    r.points  || 0,
         gpg:    r.gp ? (r.goals / r.gp).toFixed(1) : '—',
-        sv:     r.sv      || 0,
-        ga:     r.ga      || 0,
-        svpct:  r.svpct   || '—',
-        gaa:    r.gaa     || '—',
+        sv:     saves,
+        ga,
+        svpct,
+        gaa,
         apg:    r.gp ? (r.assists / r.gp).toFixed(1) : '—',
         _source: 'firestore',
       }

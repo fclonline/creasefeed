@@ -8,6 +8,44 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 
 ---
 
+## 2026-08-27
+
+### Shipped to production
+- **Killed the fabricated goalkeeper leaderboard.** The Goalkeepers tab was serving 100% invented players (Tyler Coon/Army, Liam Entenmann/Duke...) from `mockData.js`. Cause: the query ordered by `sv`, a field that does not exist on `playerStats` (real field is `saves`), so it returned zero rows and silently fell back to mock. Mock fallback is now gated to `import.meta.env.DEV`; production shows an honest empty state instead of fake rows.
+- **Fixed blank Team / Position columns.** Aggregator writes `teamName`/`position`; frontend was reading `team`/`pos`. Also added a `normPos()` map so raw NCAA codes (`a`, `A`, `gk`, `g`, `Goalkeeper`, `*`, ``) render as ATT/MID/DEF/GK or a dash, not junk.
+- **Fixed GAA — was wrong by 60x.** `goalieMinutes` is a misnomer: the NCAA box score reports goalie time in **seconds** and the aggregator stores it verbatim. GAA was computed as `ga * 60 / secs`, printing 0.19 instead of ~11.7. Now `ga * 3600 / secs`. Verified live: GAA reads 9–17.
+- **D1/D2/D3 toggle now filters stats.** The deployed query had no `div` clause, so all three divisions showed the same national list. Required indexes were already deployed back in May.
+- **Honest source labelling.** The indicator read "Loading..." over fully-loaded real data (the hook's new `ncaa` source had no label case). Now reads "NCAA box scores — season totals unverified", with cases for `empty`/`error`.
+
+### Data accuracy — root cause FOUND, cleanup still gated
+Deployed the v3 read-only diagnostic (`triggerStatsInflationDiagnostic`, `?full=1` returns per-player rows) and ran it against all 9,803 season game docs.
+
+**The duplicate-games theory is refuted.** Only 48 duplicate clusters / 51 extra docs exist, and legacy `{school}-*` docs were almost never aggregated (`processedByPrefix`: ncaa 7531, legacy-m 14, legacy-w 91). Not the cause.
+
+**Actual cause: the same game doc is aggregated more than once.** In the diagnostic output `distinctGames_canonical == distinctGames_raw` for essentially every flagged player — so no duplicate docs are contributing — yet `storedGp` far exceeds both:
+
+| Player | Team | stored gp | distinct games | ratio |
+|---|---|---|---|---|
+| Paige Murphy | Maryville (MO) | 37 | 22 | 1.68 |
+| Mason Bellinger | Chris. Newport | 35 | 21 | 1.67 |
+| Chloe Humphrey | North Carolina | 31 | 21 | 1.48 |
+| Matthew Tully | Cornell | 18 | 16 | 1.13 |
+
+25/25 top-goals and 23/25 top-saves rows are flagged. `aggregateSeasonStats` is guarded by a non-transactional read-modify-write on the game doc's `statsProcessed` flag ([ncaaBoxScores.js:225](functions/src/scrapers/ncaaBoxScores.js:225)) while `boxScoresJob` fires **every 2 minutes** — overlapping invocations both read `statsProcessed: false` and both increment. The partial, uneven ratios (1.1x for D1 men, ~1.7x for D2/D3 women) are the signature of a race, not of duplication.
+
+### Parked / follow-ups
+- **Cleanup remains gated on Deemer** per the standing rule: zero out affected aggregates and re-accumulate from canonical survivors (NOT decrement, NOT delete-only). Now unblocked to design, since the cause is known.
+- **Fix must precede any rebuild:** make `statsProcessed` a real transaction (or key idempotency per gameId+playerId), or the rebuild re-inflates in Feb 2027.
+- **1,828 game docs (18.6%) have no `gameDate`** — excluded from cluster analysis entirely, and a blind spot in any date-keyed dedupe. Separate issue worth its own pass.
+- **Season totals are still inflated on the live site.** They're now labelled unverified rather than hidden — Deemer's call whether to hide the GP-derived columns until the rebuild.
+- Women's team records still gated to `—` on Teams (see `creasefeed-team-records`).
+- Public HTTP triggers still `invoker:'public'` with no auth (`triggerBackfill`, `triggerScoreboardBackfill`, ...). Separate session.
+
+### Notes
+- Scrapers have been idle since ~end of May (`boxScoresJob` is gated to Feb–May), so nothing is actively getting worse — this is the clean window to rebuild aggregates.
+
+---
+
 ## 2026-05-28
 
 ### Shipped to production

@@ -55,6 +55,52 @@
         { "fieldPath": "season", "order": "ASCENDING" },
         { "fieldPath": "assists", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "playerStats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "gender", "order": "ASCENDING" },
+        { "fieldPath": "season", "order": "ASCENDING" },
+        { "fieldPath": "div", "order": "ASCENDING" },
+        { "fieldPath": "goals", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "playerStats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "gender", "order": "ASCENDING" },
+        { "fieldPath": "season", "order": "ASCENDING" },
+        { "fieldPath": "div", "order": "ASCENDING" },
+        { "fieldPath": "assists", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "playerStats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "gender", "order": "ASCENDING" },
+        { "fieldPath": "season", "order": "ASCENDING" },
+        { "fieldPath": "div", "order": "ASCENDING" },
+        { "fieldPath": "saves", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "playerStats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "season", "order": "ASCENDING" },
+        { "fieldPath": "goals", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "playerStats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "season", "order": "ASCENDING" },
+        { "fieldPath": "saves", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
