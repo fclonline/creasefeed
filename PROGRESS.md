@@ -80,6 +80,15 @@ Deployed the v3 read-only diagnostic (`triggerStatsInflationDiagnostic`, `?full=
 - **Team-defense stat** from `teamStats.goalie` (100% coverage, already stored) is the agreed replacement for the goalkeeper board.
 - **IAM gap:** `triggerBoxScores` / `triggerBackfill` / `testBoxScore` can't deploy — the account lacks `roles/functions.admin` to set the public invoker policy. Scheduled jobs are unaffected.
 
+**Goalie / possession data — settled what the NCAA API can and cannot give**
+- **Schema gap closed.** `parsePlayer` kept 5 of the goalie block's 12 fields; the other 7 (gamesPlayed, losses, combinedShutouts, PP/SH/EN/shootout goals-allowed) are now captured, plus 5 extra team-level goalie fields. Also fixed `isGoalie`, which was always false for men's (it tested `position === 'gk'`, but men's use `'g'`).
+- **Coverage is a values gap, not a schema gap.** Re-measured over 60 games across all six combos: non-zero player-level goalie saves in M D1 30%, M D2 20%, M D3 10%, **0% women's at every division** — 6/60 overall, team-level 60/60. The fields are always present and correctly parsed; they are valued `"0"`. Reading more fields cannot create data, so the goalkeeper board stays withheld.
+- **Face-offs and clearing are absent from the API entirely** — exhaustive key scan over 12 games, both genders, found no face/faceoff/clear/ride key anywhere in the 37-key player or 46-key team universe. The one possession-family key is `drawControls`, which is captured AND populated (30/40 top women's D1 scorers; Ella Rishko 99 draws in 18 GP). **WMT is therefore needed only for men's face-offs and clearing. A women's draw-controls leaderboard is shippable today with no new source.**
+
+**Cleanup completed**
+- **Ghost purge applied** — 2,821 legacy `m-*`/`w-*` playerStats docs deleted. Verified: 26,532 docs remain, **0 legacy ids left**. The one doc above the 26,531 with canonical appearances is an `ncaa-`-id doc the guard deliberately spared.
+- **Season rollover verified live** — `aggregateRecords` resolved `"season":"2026"` (not the calendar-derived 2027) and wrote `/config/site`, which the frontend now reads.
+
 ### ⭐ Next session — Deemer's priority
 > "we need to find out how to get more of these player stats across levels more streamlined and efficient"
 
