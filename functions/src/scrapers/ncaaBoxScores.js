@@ -223,8 +223,35 @@ async function processBoxScoreDoc(gameDocSnap) {
   const alreadyAggregated = data.statsProcessed === true
 
   if (isFinal && !alreadyAggregated) {
-    await aggregateSeasonStats(playerStats, data, teamMap)
-    await gameDocSnap.ref.update({ statsProcessed: true })
+    // Claim the game in a transaction before aggregating. boxScoresJob fires
+    // every 2 minutes and a slow run outlives its own interval, so two runs
+    // routinely overlap. Both would read statsProcessed=false, both would call
+    // aggregateSeasonStats, and every FieldValue.increment would apply twice —
+    // this is the cause of the 1.12x-1.72x season-total inflation. The
+    // transaction lets exactly one run win the claim.
+    const claimed = await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(gameDocSnap.ref)
+      if (!fresh.exists) return false
+      const d = fresh.data()
+      if (d.status !== 'final' || d.statsProcessed === true) return false
+      tx.update(gameDocSnap.ref, { statsProcessed: true, statsProcessedAt: Date.now() })
+      return true
+    })
+
+    if (claimed) {
+      try {
+        await aggregateSeasonStats(playerStats, data, teamMap)
+      } catch (err) {
+        // aggregateSeasonStats commits a single atomic batch, so a failure
+        // wrote nothing. Release the claim so a later run retries rather than
+        // leaving the game permanently marked processed with no stats.
+        await gameDocSnap.ref.update({
+          statsProcessed: false,
+          statsProcessedAt: FieldValue.delete(),
+        })
+        throw err
+      }
+    }
   }
 
   return {
@@ -315,6 +342,10 @@ async function aggregateSeasonStats(players, gameContext, teamMap) {
     } catch (err) {
       console.error(`[ncaa-boxscores] aggregation batch failed:`, err.message)
       await logError(`aggregate:batch`, err)
+      // Rethrow. Swallowing this let the caller mark the game statsProcessed
+      // even though nothing was written, silently losing the game's stats for
+      // the season with no way to notice.
+      throw err
     }
   }
 }
