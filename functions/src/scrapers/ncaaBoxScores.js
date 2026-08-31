@@ -125,13 +125,23 @@ function parsePlayer(p, team) {
     majorPenalties:  parseInt(p.penalties?.major, 10)   || 0,
     minorPenalties:  parseInt(p.penalties?.minor, 10)   || 0,
 
-    // Goalie (only populated when position === 'gk' and goalie block present)
-    isGoalie:           p.position === 'gk' && !!p.goalie,
+    // Goalie. The API sends 12 fields in this block; we previously kept 5 and
+    // dropped the rest. NOTE: men's box scores use position 'g', women's use
+    // 'gk', so isGoalie was always false for men's -- derive it from the block
+    // instead of the position string.
+    isGoalie:           !!p.goalie && (p.position === 'gk' || p.position === 'g'),
     goalieMinutes:      parseInt(p.goalie?.minutesPlayed, 10) || 0,
     saves:              parseInt(p.goalie?.saves, 10)         || 0,
     goalsAllowed:       parseInt(p.goalie?.goalsAllowed, 10)  || 0,
     shutouts:           parseInt(p.goalie?.shutouts, 10)      || 0,
     goalieGamesStarted: p.goalie?.gamesStarted === '1' ? 1 : 0,
+    goalieGamesPlayed:  parseInt(p.goalie?.gamesPlayed, 10)   || 0,
+    goalieLosses:       parseInt(p.goalie?.losses, 10)        || 0,
+    combinedShutouts:   parseInt(p.goalie?.combinedShutouts, 10)        || 0,
+    ppGoalsAllowed:     parseInt(p.goalie?.powerplayGoalsAllowed, 10)   || 0,
+    shGoalsAllowed:     parseInt(p.goalie?.shortHandedGoalsAllowed, 10) || 0,
+    enGoalsAllowed:     parseInt(p.goalie?.emptyNetGoalsAllowed, 10)    || 0,
+    soGoalsAllowed:     parseInt(p.goalie?.shootoutGoalsAllowed, 10)    || 0,
   }
 }
 
@@ -146,8 +156,15 @@ function parseTeamStats(t) {
     groundBalls:     parseInt(t.groundBalls, 10)     || 0,
     turnovers:       parseInt(t.turnovers, 10)       || 0,
     causedTurnovers: parseInt(t.causedTurnovers, 10) || 0,
+    // Team-level goalie data is present on 100% of games (vs 10% at player
+    // level), so keep all of it -- this is the basis for team-defense stats.
     saves:           parseInt(t.goalie?.saves, 10)        || 0,
     goalsAllowed:    parseInt(t.goalie?.goalsAllowed, 10) || 0,
+    goalieMinutes:   parseInt(t.goalie?.minutesPlayed, 10)          || 0,
+    shutouts:        parseInt(t.goalie?.shutouts, 10)               || 0,
+    ppGoalsAllowed:  parseInt(t.goalie?.powerplayGoalsAllowed, 10)  || 0,
+    shGoalsAllowed:  parseInt(t.goalie?.shortHandedGoalsAllowed, 10)|| 0,
+    enGoalsAllowed:  parseInt(t.goalie?.emptyNetGoalsAllowed, 10)   || 0,
     powerPlayGoals:  parseInt(t.powerPlay?.goals, 10)         || 0,
     powerPlayOpps:   parseInt(t.powerPlay?.opportunities, 10) || 0,
     penaltyCount:    parseInt(t.penalties?.count, 10) || 0,
@@ -329,6 +346,13 @@ async function aggregateSeasonStats(players, gameContext, teamMap) {
       goalieMinutes:      FieldValue.increment(p.goalieMinutes),
       shutouts:           FieldValue.increment(p.shutouts),
       goalieGamesStarted: FieldValue.increment(p.goalieGamesStarted),
+      goalieGamesPlayed:  FieldValue.increment(p.goalieGamesPlayed),
+      goalieLosses:       FieldValue.increment(p.goalieLosses),
+      combinedShutouts:   FieldValue.increment(p.combinedShutouts),
+      ppGoalsAllowed:     FieldValue.increment(p.ppGoalsAllowed),
+      shGoalsAllowed:     FieldValue.increment(p.shGoalsAllowed),
+      enGoalsAllowed:     FieldValue.increment(p.enGoalsAllowed),
+      soGoalsAllowed:     FieldValue.increment(p.soGoalsAllowed),
 
       updatedAt: Date.now(),
     }, { merge: true })

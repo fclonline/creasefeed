@@ -36,7 +36,8 @@ const COUNTERS = [
   'gameWinningGoals', 'overtimeGoals', 'powerplayGoals', 'shortHandedGoals',
   'freePositionGoals', 'penaltyCount', 'penaltyMinutes', 'majorPenalties',
   'minorPenalties', 'saves', 'goalsAllowed', 'goalieMinutes', 'shutouts',
-  'goalieGamesStarted',
+  'goalieGamesStarted', 'goalieGamesPlayed', 'goalieLosses', 'combinedShutouts',
+  'ppGoalsAllowed', 'shGoalsAllowed', 'enGoalsAllowed', 'soGoalsAllowed',
 ]
 
 // Must match aggregateSeasonStats exactly, or gp will not line up: the NCAA API
