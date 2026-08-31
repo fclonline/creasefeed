@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { PROGRAMS, getConferences, searchPrograms, normTeam } from '../data/programs.js'
+import { PROGRAMS, getConferences, searchPrograms, normTeam, canonTeam, TEAM_ALIASES } from '../data/programs.js'
 import { useTeams } from '../hooks/useTeams.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { fetchTeamRecords } from '../api/firestore.js'
@@ -9,12 +9,17 @@ export default function TeamsPage({ gender, division, isW, onAuthClick, onSelect
   const { user } = useAuth()
   const { followTeam, unfollowTeam, isFollowing } = useTeams()
   const [query, setQuery]       = useState('')
-  const [gFilter, setGFilter]   = useState('All')
+  const [gFilter, setGFilter]   = useState(gender)
   const [dFilter, setDFilter]   = useState('all')
   const [confFilter, setConfFilter] = useState('All')
   const [expanded, setExpanded] = useState({})
   const [records, setRecords] = useState({ M: {}, W: {} })
   const ac_ = chip(isW)
+
+  // Men's and women's programs must never be listed together — every school
+  // appears in both, and the row shows no gender, so a combined list reads as
+  // duplicate rows (Georgetown 11-5 and 12-6). Follow the global gender toggle.
+  useEffect(() => { setGFilter(gender) }, [gender])
 
   // Load aggregated W-L records for both genders once (written nightly by the
   // aggregateRecords Cloud Function to /records/{M|W}).
@@ -27,18 +32,23 @@ export default function TeamsPage({ gender, division, isW, onAuthClick, onSelect
     return () => { cancelled = true }
   }, [])
 
-  // Look up a program's record by normalized name, falling back to its id slug.
-  // NOTE: women's records are temporarily withheld — the women's `games`
-  // collection has duplicate/fragmented docs (backfill dupes + mixed NCAA/
-  // Sidearm sources) that produce wrong totals. Men's data is clean and
-  // verified, so we show it now and re-enable women's once the data is cleaned.
+  // Look up a program's record. Women's used to be withheld because the Sidearm
+  // scraper's undated docs slipped past aggregateRecords' dedupe and inflated
+  // totals (Stanford W: 41 games vs a true 22); those are dropped at aggregation
+  // time now, so both genders are shown. The extra key forms below exist because
+  // the NCAA API names teams differently — see programs.js "Record matching".
   const lookupRecord = (p) => {
-    if (p.gender !== 'M') return null
-    const rec = records[p.gender]?.[normTeam(p.name)]
-      || records[p.gender]?.['seo:' + p.id.replace(/^[mw]-/, '')]
+    const byGender = records[p.gender]
+    const slug = p.id.replace(/^[mw]\d?-/, '')
+    const alias = TEAM_ALIASES[normTeam(p.name)]
+    const rec = byGender?.[normTeam(p.name)]
+      || byGender?.['seo:' + slug]
+      || byGender?.['c:' + canonTeam(p.name)]
+      || byGender?.['sk:' + normTeam(slug)]
+      || (alias ? byGender?.[alias] : null)
       || null
     if (!rec) return null
-    // Guard against any residual duplicate inflation (a season is ~25 games max).
+    // Defensive guard against any residual inflation (a season is ~25 games max).
     if ((rec.w + rec.l) > 28) return null
     return rec
   }
@@ -50,7 +60,7 @@ export default function TeamsPage({ gender, division, isW, onAuthClick, onSelect
 
   // Derive conferences from selected gender + division
   const confs = useMemo(() => getConferences(
-    gFilter === 'All' ? undefined : gFilter,
+    gFilter,
     dFilter === 'all' ? undefined : dFilter
   ), [gFilter, dFilter])
 
@@ -62,7 +72,7 @@ export default function TeamsPage({ gender, division, isW, onAuthClick, onSelect
   // Filter programs
   const programs = useMemo(() => {
     let results = searchPrograms(query, {
-      gender: gFilter === 'All' ? undefined : gFilter,
+      gender: gFilter,
       div:    dFilter === 'all' ? undefined : dFilter,
     })
     if (confFilter !== 'All') {
@@ -102,7 +112,7 @@ export default function TeamsPage({ gender, division, isW, onAuthClick, onSelect
           onChange={e => setQuery(e.target.value)}
         />
         <div className="teams-filter-group">
-          {[{ v: 'All', l: 'All' }, { v: 'M', l: "Men's" }, { v: 'W', l: "Women's" }].map(o => (
+          {[{ v: 'M', l: "Men's" }, { v: 'W', l: "Women's" }].map(o => (
             <button key={o.v} className={`filter-chip ${gFilter === o.v ? ac_ : ''}`} onClick={() => setGFilter(o.v)}>{o.l}</button>
           ))}
         </div>

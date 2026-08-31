@@ -26,6 +26,7 @@ import {
   limit,
 } from 'firebase/firestore'
 import { db } from '../firebase/config'
+import { canonTeam, seoKey } from '../data/programs.js'
 
 const SEASON = '2026'
 
@@ -101,10 +102,16 @@ export async function fetchTeamRecords(gender) {
     const snap = await getDoc(doc(db, 'records', gender))
     if (!snap.exists()) return {}
     const data = snap.data()
+    // Index each record under every key a program might match on. See the
+    // "Record matching" block in programs.js for why the extra folds exist.
     const map = {}
     for (const t of (data.teams || [])) {
       if (t.nameKey) map[t.nameKey] = t
-      if (t.seo) map['seo:' + String(t.seo).toLowerCase()] = t
+      if (t.seo) {
+        map['seo:' + String(t.seo).toLowerCase()] = t
+        map['sk:' + seoKey(t.seo)] = t
+      }
+      if (t.name) map['c:' + canonTeam(t.name)] = t
     }
     return map
   } catch (err) {

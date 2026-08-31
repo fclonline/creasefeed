@@ -904,6 +904,38 @@ export const normTeam = (s) => (s || '')
   .replace(/&/g, 'and')
   .replace(/[^a-z0-9]/g, '')
 
+// ── Record matching ──────────────────────────────────────────────────────────
+// The NCAA API names teams differently from this list: it abbreviates "State"
+// to "St." (Penn St., Kennesaw St.) and suffixes ambiguous names with a state
+// code (seo "albany-ny" for UAlbany). Matching on normTeam() alone left 21% of
+// programs with no record. These two deterministic folds bring D1 to 0 unmatched
+// men's / 1 unmatched women's. Fuzzy matching is deliberately NOT used — it
+// mismatched Stonehill→Seton Hill, NYIT→NJIT and Fort Lewis→Lewis.
+
+// normTeam() with a trailing "st" expanded to "state", so "Penn St." and
+// "Penn State" collapse to the same key.
+export const canonTeam = (s) => {
+  const n = normTeam(s)
+  return n.endsWith('st') ? n.slice(0, -2) + 'state' : n
+}
+
+const US_STATE_SUFFIXES = new Set(['al','ak','az','ar','ca','co','ct','de','fl','ga','hi','id','il','in','ia','ks','ky','la','me','md','ma','mi','mn','ms','mo','mt','ne','nv','nh','nj','nm','ny','nc','nd','oh','ok','or','pa','ri','sc','sd','tn','tx','ut','vt','va','wa','wv','wi','wy','dc'])
+
+// Strip a trailing state code off an NCAA seo: "albany-ny" -> "albany".
+export const seoKey = (seo) => {
+  const raw = String(seo || '').toLowerCase()
+  const cut = raw.lastIndexOf('-')
+  const tail = cut > 0 ? raw.slice(cut + 1) : ''
+  return normTeam(US_STATE_SUFFIXES.has(tail) ? raw.slice(0, cut) : raw)
+}
+
+// Name variants the folds above can't derive. Keyed by normTeam(our name) ->
+// normTeam(NCAA name). Add entries here as they surface; never guess.
+export const TEAM_ALIASES = {
+  centralconnecticut:   'centralconnst',
+  southernnewhampshire: 'southernnh',
+}
+
 // helpers
 export const getProgramById   = (id) => PROGRAMS.find(p => p.id === id)
 export const getProgramsByDiv = (div) => PROGRAMS.filter(p => p.div === div)

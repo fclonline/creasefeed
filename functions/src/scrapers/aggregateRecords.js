@@ -39,8 +39,18 @@ export async function aggregateRecords() {
   // Sidearm docs for the same game, which would double-count records. Key each
   // real game by date + the two teams; prefer the NCAA-API doc on collision.
   const uniqueGames = new Map()
+  let droppedSidearm = 0
   snap.forEach((docSnap) => {
     const g = docSnap.data()
+
+    // Drop the abandoned Sidearm scraper's docs outright (2,108 of them as of
+    // 2026-08). They carry no gameDate, so their dedupe key ("W||a~b") never
+    // collides with the real dated ncaa-api key and they were double-counted:
+    // Stanford W showed 41 games against a true 22. They also have no teamSeo
+    // and no box score, and every game they describe is already covered by an
+    // ncaa-api doc, so nothing is lost by ignoring them.
+    if (g._source === 'sidearm-boxscore-header') { droppedSidearm++; return }
+
     if (g.gender !== 'M' && g.gender !== 'W') return
     const home = g.home || {}
     const away = g.away || {}
@@ -69,7 +79,14 @@ export async function aggregateRecords() {
 
     for (const [side, opp] of [[home, away], [away, home]]) {
       const seo = (side.teamSeo || '').trim().toLowerCase()
-      const key = seo || normTeam(side.name)
+
+      // Key on the normalized NAME, not `seo || name`. teamSeo is present on
+      // some game docs and missing on others for the same team, and keying on
+      // it split those teams into two buckets — Penn St. W ended up as both
+      // 12-7 (seo "penn-st") and 0-1 (no seo). The frontend indexes both under
+      // the same nameKey, so the stray bucket won and served a wrong record.
+      // seo is still carried as metadata, filled from whichever doc has one.
+      const key = normTeam(side.name)
       if (!key) continue
 
       let rec = bucket.get(key)
@@ -77,13 +94,15 @@ export async function aggregateRecords() {
         rec = {
           seo,
           name: side.name || '',
-          nameKey: normTeam(side.name),
+          nameKey: key,
           div: g.div || '',
           conf: side.conf || '',
           w: 0, l: 0, confW: 0, confL: 0,
         }
         bucket.set(key, rec)
       }
+      if (!rec.seo && seo) rec.seo = seo
+      if (!rec.conf && side.conf) rec.conf = side.conf
 
       const won = side.score > opp.score
       if (won) { rec.w++; if (isConfGame) rec.confW++ } else { rec.l++; if (isConfGame) rec.confL++ }
@@ -97,7 +116,7 @@ export async function aggregateRecords() {
     await db.collection('records').doc(gender).set({ season: SEASON, updatedAt, teams })
   }
 
-  const result = { games: counted, mTeams: buckets.M.size, wTeams: buckets.W.size }
-  console.log(`[aggregateRecords] ✓ ${counted} final games → M:${result.mTeams} teams, W:${result.wTeams} teams`)
+  const result = { games: counted, mTeams: buckets.M.size, wTeams: buckets.W.size, droppedSidearm }
+  console.log(`[aggregateRecords] ✓ ${counted} final games → M:${result.mTeams} teams, W:${result.wTeams} teams (dropped ${droppedSidearm} sidearm docs)`)
   return result
 }

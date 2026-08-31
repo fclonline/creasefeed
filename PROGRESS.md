@@ -46,6 +46,31 @@ Deployed the v3 read-only diagnostic (`triggerStatsInflationDiagnostic`, `?full=
 
 ---
 
+## 2026-08-31
+
+### Shipped to production
+
+**Team records — now accurate for both genders**
+- **Excluded the abandoned Sidearm scraper's docs from `aggregateRecords`.** `/games` holds 9,803 docs from two sources: ncaa-api (7,695) and `sidearm-boxscore-header` (2,108). The Sidearm docs are junk — **1,828 have no `gameDate` at all** (100% of every missing-date doc in the collection; ncaa-api has zero), **none have a `teamSeo`**, and **814 name the home team literally `"Home"`**. All were marked `final`, so they counted toward records. Because they carry no date, their dedupe key never collided with the real dated key and they were double-counted. Excluding them: women **749→542 teams, max 102→23 games, 0 teams over 24**; men **534→400, max 67→24**. Stanford W went 41 games → 22.
+- **Un-gated women's records** on the Teams page. They'd been forced to `—` since May pending exactly this cleanup.
+- **Fixed split team buckets.** `aggregateRecords` keyed teams on `seo || name`, but `teamSeo` is present on some game docs and missing on others for the same team — splitting **20 teams** into two records each. Penn State W existed as both 12-7 (seo `penn-st`) and 0-1 (bare name), and the frontend's index let the stray 0-1 win. Now keyed on the normalized name with seo as metadata. 20 splits → 0. Penn State W correctly reads 12-8.
+
+**Teams page**
+- **Never show men's and women's together.** The page's own gender filter defaulted to `All` and ignored the global toggle, so every school appeared twice with no gender column to distinguish them — Georgetown as 11-5 *and* 12-6, Denver as 5-8 *and* 16-4. Read as duplicate rows. The `All` option is gone and the filter now follows the global toggle.
+- **Fixed record matching — 149 of 709 programs (21%) were showing no record.** The NCAA API abbreviates "State" to "St." (Penn St., Kennesaw St., Florida St.) and suffixes some seos with a state code (`albany-ny` for UAlbany, which is why Albany was blank). Two deterministic folds in `programs.js` — trailing `st`→`state`, and stripping a trailing state code off the seo — take **D1 to 0 unmatched men's / 1 unmatched women's**, plus a two-entry alias map for Central Connecticut and Southern New Hampshire. Fuzzy matching was tested and rejected: it mismatched Stonehill→Seton Hill, NYIT→NJIT, Daemen→Dean, Fort Lewis→Lewis. Wrong records are worse than blank ones.
+
+### Diagnostics
+- **Ran the stats-inflation diagnostic** (deployed but never once invoked since May). It **refuted** the standing theory: legacy docs contributed only 105 aggregated docs, and there are just 48 duplicate clusters — nowhere near enough. Four spot-checked players had **zero** duplicate game docs on their teams yet were all inflated, at **varying ratios (1.12x–1.72x)**, so totals must be rebuilt from game docs, not scaled. Mechanism is the double-aggregation race in `ncaaBoxScores.js`: `statsProcessed` is written *after* aggregation, and `boxScoresJob` ran every 2 minutes.
+
+### Parked / follow-ups
+- **~100 programs still show no record, all D2/D3.** Two causes, not yet separated: real name variants needing alias entries ("Southern N.H."), and schools with no games in the data at all (College of Saint Rose, Adams State, King return nothing under any name).
+- **The 2,108 Sidearm docs are still in Firestore**, now inert since they're filtered at aggregation. Purging them is optional cleanup, not a fix.
+- ⚠️ **Firestore REST encodes integers as `{"integerValue": "7"}` — a JSON string.** Any local analysis script must handle that branch or every score silently becomes a string and comparisons go lexicographic. This produced a false "inverted records" alarm this session. The app uses the Admin/Web SDK and gets real numbers; there is no such bug in the product.
+
+### Next session
+- **Step 2: the idempotency fix** in `aggregateSeasonStats` — must land before any playerStats rebuild, or February re-inflates everything.
+- **Step 3: rebuild `playerStats`** — zero affected aggregates, re-accumulate from canonical ncaa-api docs only.
+
 ## 2026-05-28
 
 ### Shipped to production
