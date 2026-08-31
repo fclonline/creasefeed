@@ -55,6 +55,23 @@ export function initSeason() {
 // the first query fires.
 initSeason()
 
+// ── Canonical game docs ───────────────────────────────────────────────────────
+// /games holds two eras: current `ncaa-*` docs from the NCAA API, and orphaned
+// `m-*` / `w-*` docs from the retired Sidearm scraper (_source
+// 'sidearm-boxscore-header'). The two are cleanly separated by doc-ID prefix.
+//
+// 280 Sidearm docs carry a gameDate, so they match the date-filtered queries
+// below and surface in Scores, Schedule, the ticker and team pages. 169 of them
+// have placeholder team names ("Home" / "Away") -- the source of ticker
+// artifacts like "AWAY · LEHIGH" (Lehigh alone appears 19 times). Only 6
+// duplicate a real game; the other 274 are phantom fixtures that never map to
+// anything.
+//
+// Filtered client-side on purpose: an equality filter on _source would need a
+// new composite index on every one of these query shapes, and the volume here
+// is trivial.
+const isCanonicalGame = (d) => d.id.startsWith('ncaa-')
+
 // ── Subscribe to live scoreboard (real-time) ──────────────────────────────────
 // Returns an unsubscribe function — call it on component unmount
 // date param is YYYYMMDD string (e.g. "20260402"), div is "1"/"2"/"3"
@@ -77,7 +94,7 @@ export function subscribeToScoreboard(gender, onData, onError, date, div) {
 
   return onSnapshot(q,
     (snap) => {
-      const games = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      const games = snap.docs.filter(isCanonicalGame).map(d => ({ id: d.id, ...d.data() }))
       if (games.length > 0) {
         onData(games)
         console.info(`[CreaseFeed] ✓ Firestore — ${games.length} games (${gender}) real-time${date ? ` for ${date}` : ''}`)
@@ -110,8 +127,7 @@ export async function fetchScoreboard(gender, date, div) {
 
     const q = query(collection(db, 'games'), ...constraints)
     const snap = await getDocs(q)
-    const games = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    return games
+    return snap.docs.filter(isCanonicalGame).map(d => ({ id: d.id, ...d.data() }))
   } catch (err) {
     console.warn('[CreaseFeed] Firestore fetchScoreboard failed:', err.message)
     return []
