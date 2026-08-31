@@ -247,3 +247,102 @@ export async function rebuildPlayerStats({ dryRun = true } = {}) {
   console.log(`[rebuild] dryRun=${dryRun} canonical=${report.canonicalGames} computed=${report.players.computed} corrected=${report.players.corrected} zeroGame=${report.players.zeroGameCandidates}`)
   return { ok: true, docId, ...report, examples: report.examples.slice(0, 15), zeroGameExamples: report.zeroGameExamples.slice(0, 10) }
 }
+
+// ============================================================================
+// Ghost purge
+//
+// The Sidearm pipeline wrote /playerStats docs with legacy `m-*` / `w-*` ids and
+// no teamName. After the rebuild they have no canonical game backing them at
+// all, but they still rank: 20 of the top 25 on the women's D1 saves board were
+// ghosts, including the same person twice in two name formats ("Spichiger,
+// Regan" and "Regan Spichiger").
+//
+// A ghost is defined narrowly and verifiably:
+//   - its doc id does NOT start with "ncaa-", AND
+//   - it has zero canonical game appearances in the current game data
+// Anything with a canonical appearance is never touched, whatever its id.
+// ============================================================================
+
+export async function purgeGhostPlayerStats({ dryRun = true } = {}) {
+  const startedAt = Date.now()
+  const report = {
+    startedAt: new Date(startedAt).toISOString(),
+    season: SEASON, dryRun,
+    canonicalGames: 0,
+    playersWithCanonicalAppearance: 0,
+    existing: 0,
+    ghosts: 0,
+    keptLegacyWithAppearance: 0,
+    examples: [],
+    warnings: [],
+  }
+
+  // Rebuild the canonical set and the id of every player who really appears.
+  const canonical = new Map()
+  for await (const doc of iterateGames()) {
+    const g = doc.data()
+    if (g._source === 'sidearm-boxscore-header' || !doc.id.startsWith('ncaa-')) continue
+    const lines = Array.isArray(g.playerStats) ? g.playerStats.length : 0
+    if (!lines || !g.gender || !g.gameDate || !g.home?.name || !g.away?.name) continue
+    const key = `${g.gender}|${g.gameDate}|${sortedTeamPair(g.home.name, g.away.name)}`
+    const prev = canonical.get(key)
+    if (!prev || lines > prev.size || (lines === prev.size && doc.id < prev.id)) {
+      canonical.set(key, { id: doc.id, size: lines })
+    }
+  }
+  const canonicalIds = new Set(Array.from(canonical.values()).map(v => v.id))
+  report.canonicalGames = canonicalIds.size
+
+  const appearing = new Set()
+  for await (const doc of iterateGames()) {
+    if (!canonicalIds.has(doc.id)) continue
+    for (const p of (doc.data().playerStats || [])) {
+      if (p?.playerId && contributed(p)) appearing.add(p.playerId)
+    }
+  }
+  report.playersWithCanonicalAppearance = appearing.size
+
+  if (appearing.size === 0) {
+    report.warnings.push('STOP: no players found in canonical games. Refusing to purge.')
+    await db.collection('diagnostics').doc(`purge-ghosts-abort-${startedAt}`).set(report)
+    return { ok: false, ...report }
+  }
+
+  const snap = await db.collection('playerStats').where('season', '==', SEASON).get()
+  report.existing = snap.size
+
+  const doomed = []
+  for (const d of snap.docs) {
+    const isLegacyId = !d.id.startsWith('ncaa-')
+    const hasAppearance = appearing.has(d.id)
+    if (hasAppearance) { if (isLegacyId) report.keptLegacyWithAppearance++; continue }
+    if (!isLegacyId) continue   // ncaa-* with no appearance: leave alone, not a ghost
+    doomed.push(d)
+    if (report.examples.length < 40) {
+      const c = d.data()
+      report.examples.push({
+        playerId: d.id, name: c.name || null, team: c.teamName || null,
+        gp: c.gp ?? 0, goals: c.goals ?? 0, saves: c.saves ?? 0,
+      })
+    }
+  }
+  report.ghosts = doomed.length
+
+  if (!dryRun && doomed.length > 0) {
+    let deleted = 0
+    for (let i = 0; i < doomed.length; i += COMMIT_CHUNK) {
+      const batch = db.batch()
+      for (const d of doomed.slice(i, i + COMMIT_CHUNK)) batch.delete(d.ref)
+      await batch.commit()
+      deleted += Math.min(COMMIT_CHUNK, doomed.length - i)
+    }
+    report.deleted = deleted
+  }
+
+  report.completedAt = new Date().toISOString()
+  report.durationMs = Date.now() - startedAt
+  const docId = `${dryRun ? 'purge-ghosts-dryrun' : 'purge-ghosts-applied'}-${startedAt}`
+  await db.collection('diagnostics').doc(docId).set(report)
+  console.log(`[purge] dryRun=${dryRun} ghosts=${report.ghosts} keptLegacy=${report.keptLegacyWithAppearance}`)
+  return { ok: true, docId, ...report, examples: report.examples.slice(0, 12) }
+}

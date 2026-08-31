@@ -22,7 +22,7 @@ import { scrapeAllPolls } from './scrapers/polls.js'
 import { fetchNcaaScores, backfillScoreboards } from './scrapers/ncaaScores.js'
 import { aggregateRecords } from './scrapers/aggregateRecords.js'
 import { runStatsInflationDiagnostic } from './diagnostics/statsInflation.js'
-import { rebuildPlayerStats } from './diagnostics/rebuildPlayerStats.js'
+import { rebuildPlayerStats, purgeGhostPlayerStats } from './diagnostics/rebuildPlayerStats.js'
 
 // Shared-secret token for the read-only diagnostic endpoint. Set with:
 //   firebase functions:secrets:set DIAGNOSTIC_TOKEN
@@ -45,7 +45,9 @@ export const boxScoresJob = onSchedule({
   const hour  = now.getHours()
   const month = now.getMonth()
 
-  if (month < 1 || month > 4) return  // Feb–May only
+  // Jan–June. Widened from Feb–May so preseason and late championship games are
+  // covered; running a 2-minute job year-round would just burn invocations.
+  if (month < 0 || month > 5) return
   if (hour  < 9 || hour  > 23) return // 9am–11pm ET
 
   await fetchNcaaScores()
@@ -71,9 +73,9 @@ export const scrapeNightly = onSchedule({
   memory:    '1GiB',
   timeoutSeconds: 540,
 }, async () => {
-  const month = new Date().getMonth()
-  if (month < 1 || month > 5) return  // only during season + offseason buffer
-
+  // Year-round. The old Feb–June guard meant schedules posted in Dec/Jan were
+  // never picked up, and with the forward lookahead window this job is how a new
+  // season's schedule first lands. Once a day is cheap enough to always run.
   console.log('[nightly] Starting full nightly refresh...')
   await fetchNcaaScores()
   await fetchAllBoxScores()
@@ -219,6 +221,18 @@ export const triggerStatsInflationDiagnostic = onRequest({
   try {
     if (task === 'rebuild-dry') {
       res.json(await rebuildPlayerStats({ dryRun: true }))
+      return
+    }
+    if (task === 'purge-ghosts-dry') {
+      res.json(await purgeGhostPlayerStats({ dryRun: true }))
+      return
+    }
+    if (task === 'purge-ghosts-apply') {
+      if (req.query.confirm !== 'PURGE') {
+        res.status(400).json({ ok: false, error: 'refusing to delete: pass &confirm=PURGE' })
+        return
+      }
+      res.json(await purgeGhostPlayerStats({ dryRun: false }))
       return
     }
     if (task === 'rebuild-apply') {

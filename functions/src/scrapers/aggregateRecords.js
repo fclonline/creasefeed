@@ -10,8 +10,27 @@
 // ============================================================================
 
 import { db } from '../firebase.js'
+import { currentSeason, activeSeasons } from '../season.js'
 
-const SEASON = '2026'
+// Which season's records to build. Deliberately NOT currentSeason(): in the
+// offseason that is already next spring, which has no games yet, and building
+// against it would empty /records and blank every W-L on the Teams page.
+// Follow the data instead -- the season of the most recent final game -- so the
+// rollover happens on its own the first time a new season's game goes final.
+async function resolveDataSeason() {
+  // Newest season first; take the first that actually has a final game. Uses
+  // only equality filters, so it rides the existing (season, status, ...)
+  // composite index and needs no new one.
+  for (const season of activeSeasons()) {
+    const snap = await db.collection('games')
+      .where('season', '==', season)
+      .where('status', '==', 'final')
+      .limit(1)
+      .get()
+    if (!snap.empty) return season
+  }
+  return currentSeason()
+}
 
 // Must stay in sync with normTeam() in src/data/programs.js so the frontend can
 // match a program to its aggregated record by normalized name.
@@ -26,7 +45,8 @@ function normTeam(s) {
     .replace(/[^a-z0-9]/g, '')
 }
 
-export async function aggregateRecords() {
+export async function aggregateRecords(seasonArg = null) {
+  const SEASON = seasonArg || await resolveDataSeason()
   // Project to only the fields we need. Game docs also store play-by-play and
   // box scores (large arrays); without select() the full season OOMs the worker.
   const snap = await db.collection('games')
@@ -116,7 +136,13 @@ export async function aggregateRecords() {
     await db.collection('records').doc(gender).set({ season: SEASON, updatedAt, teams })
   }
 
-  const result = { games: counted, mTeams: buckets.M.size, wTeams: buckets.W.size, droppedSidearm }
-  console.log(`[aggregateRecords] ✓ ${counted} final games → M:${result.mTeams} teams, W:${result.wTeams} teams (dropped ${droppedSidearm} sidearm docs)`)
+  // Publish the season the site should display. The frontend reads this, so a
+  // rollover needs no redeploy.
+  await db.collection('config').doc('site').set(
+    { season: SEASON, recordsUpdatedAt: updatedAt }, { merge: true }
+  )
+
+  const result = { season: SEASON, games: counted, mTeams: buckets.M.size, wTeams: buckets.W.size, droppedSidearm }
+  console.log(`[aggregateRecords] ✓ season ${SEASON}: ${counted} final games → M:${result.mTeams} teams, W:${result.wTeams} teams (dropped ${droppedSidearm} sidearm docs)`)
   return result
 }

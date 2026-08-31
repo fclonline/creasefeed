@@ -14,8 +14,16 @@
 
 import fetch from 'node-fetch'
 import { db } from '../firebase.js'
+import { seasonForDate } from '../season.js'
 
-const SEASON = '2026'
+// How far ahead to pull schedules. 14 days keeps the Schedule page populated
+// through the next two weekends without hammering the API: 6 combinations
+// (2 genders x 3 divisions) x 16 dates = 96 requests per run.
+const SCHEDULE_LOOKAHEAD_DAYS = 14
+
+// Upstream rate-limits around 5 requests/sec, so fetch in small waves.
+const SCOREBOARD_CONCURRENCY = 4
+const SCOREBOARD_THROTTLE_MS = 250
 
 // ── fetch JSON with timeout + retry ───────────────────────────────────────────
 async function fetchJson(url, retries = 2, timeoutMs = 12000) {
@@ -196,7 +204,9 @@ async function fetchAndWriteScores(sport, gender, div, date) {
           conf:           getConf(home) || getConf(away) || '',
           gender,
           div,
-          season:         SEASON,
+          // Derived from the game's own date so a 2027 game is labelled 2027
+          // the moment it appears -- no redeploy at the season rollover.
+          season:         seasonForDate(date),
           _source:        'ncaa-api',
           updatedAt:      Date.now(),
         }
@@ -230,16 +240,35 @@ export async function fetchNcaaScores() {
 
   console.log(`[ncaa-scores] Fetching NCAA D1/D2/D3 lacrosse scores...`)
 
-  // All divisions, both genders, today + yesterday
+  // Yesterday and today for results, plus a forward window so schedules load as
+  // soon as the NCAA posts them rather than only on game day. Upcoming games
+  // write with status 'upcoming' and no score, which the Schedule page already
+  // renders; re-fetching a date just overwrites it, so a schedule change is
+  // picked up on the next pass.
   const jobs = []
+  const dates = [yesterday, now]
+  for (let i = 1; i <= SCHEDULE_LOOKAHEAD_DAYS; i++) {
+    const d = new Date(now)
+    d.setDate(d.getDate() + i)
+    dates.push(d)
+  }
   for (const div of ['1', '2', '3']) {
     for (const [sport, gender] of [['lacrosse-men', 'M'], ['lacrosse-women', 'W']]) {
-      jobs.push(fetchAndWriteScores(sport, gender, div, now))
-      jobs.push(fetchAndWriteScores(sport, gender, div, yesterday))
+      // Push thunks, not promises: pushing a call would start all of them at
+      // once, and with the lookahead window that is ~96 simultaneous requests
+      // against an API that rate-limits around 5/sec.
+      for (const d of dates) jobs.push(() => fetchAndWriteScores(sport, gender, div, d))
     }
   }
 
-  const results = await Promise.allSettled(jobs)
+  const results = []
+  for (let i = 0; i < jobs.length; i += SCOREBOARD_CONCURRENCY) {
+    const slice = jobs.slice(i, i + SCOREBOARD_CONCURRENCY)
+    results.push(...await Promise.allSettled(slice.map(fn => fn())))
+    if (i + SCOREBOARD_CONCURRENCY < jobs.length) {
+      await new Promise(r => setTimeout(r, SCOREBOARD_THROTTLE_MS))
+    }
+  }
 
   const totals = { fetched: 0, written: 0, errors: 0 }
   for (const r of results) {

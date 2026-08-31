@@ -50,6 +50,12 @@ service cloud.firestore {
       allow read: if true;
     }
 
+    // Site config — currently just the season the frontend should display,
+    // published by aggregateRecords. Public read, writes only from the Admin SDK.
+    match /config/{docId} {
+      allow read: if true;
+    }
+
     match /polls/{pollId} {
       allow read: if true;
       match /history/{week} {

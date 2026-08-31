@@ -19,8 +19,7 @@
 import fetch from 'node-fetch'
 import { FieldValue } from 'firebase-admin/firestore'
 import { db } from '../firebase.js'
-
-const SEASON = '2026'
+import { seasonForGameDate, currentSeason, activeSeasons } from '../season.js'
 const BOXSCORE_API_BASE = 'https://ncaa-api.henrygd.me/game'
 const CONCURRENCY = 3            // public API rate limit is 5/sec; stay under
 const REQUEST_DELAY_MS = 250     // per-worker throttle
@@ -297,7 +296,8 @@ async function aggregateSeasonStats(players, gameContext, teamMap) {
       div:       gameContext.div || '',
       // Conference: read from the game doc's per-team conf
       conf:      (p.role === 'home' ? gameContext.home?.conf : gameContext.away?.conf) || '',
-      season:    SEASON,
+      // Take the season from the game itself, so a rollover needs no redeploy.
+      season:    seasonForGameDate(gameContext.gameDate) || gameContext.season || currentSeason(),
 
       // Counters — increment per game
       gp:                FieldValue.increment(1),
@@ -393,7 +393,7 @@ export async function fetchAllBoxScores() {
 
   // Live games — always re-fetch (stats change during play)
   const liveSnap = await db.collection('games')
-    .where('season', '==', SEASON)
+    .where('season', 'in', activeSeasons())
     .where('status', '==', 'live')
     .get()
 
@@ -403,7 +403,7 @@ export async function fetchAllBoxScores() {
   const cutoff = `${sevenAgo.getFullYear()}${String(sevenAgo.getMonth()+1).padStart(2,'0')}${String(sevenAgo.getDate()).padStart(2,'0')}`
 
   const finalSnap = await db.collection('games')
-    .where('season', '==', SEASON)
+    .where('season', 'in', activeSeasons())
     .where('status', '==', 'final')
     .where('gameDate', '>=', cutoff)
     .get()
@@ -425,7 +425,7 @@ export async function backfillBoxScores() {
   console.log('[ncaa-boxscores] BACKFILL: scanning all final games...')
 
   const snap = await db.collection('games')
-    .where('season', '==', SEASON)
+    .where('season', 'in', activeSeasons())
     .where('status', '==', 'final')
     .get()
 

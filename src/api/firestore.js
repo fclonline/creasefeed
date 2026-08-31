@@ -28,7 +28,32 @@ import {
 import { db } from '../firebase/config'
 import { canonTeam, seoKey } from '../data/programs.js'
 
-const SEASON = '2026'
+// The season the site displays. aggregateRecords publishes this to
+// /config/site every run, resolved from the season that actually has games, so
+// the rollover to 2027 needs no redeploy. The literal is only a first-paint
+// fallback for the moment before the config doc loads.
+let SEASON = '2026'
+export const getSeason = () => SEASON
+
+let seasonReady = null
+export function initSeason() {
+  if (seasonReady) return seasonReady
+  seasonReady = getDoc(doc(db, 'config', 'site'))
+    .then(snap => {
+      const s = snap.exists() ? snap.data().season : null
+      if (s) SEASON = String(s)
+      return SEASON
+    })
+    .catch(err => {
+      console.warn('[CreaseFeed] season config unavailable, using', SEASON, err.message)
+      return SEASON
+    })
+  return seasonReady
+}
+
+// Kick this off at import time so the real season is usually resolved before
+// the first query fires.
+initSeason()
 
 // ── Subscribe to live scoreboard (real-time) ──────────────────────────────────
 // Returns an unsubscribe function — call it on component unmount
