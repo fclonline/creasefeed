@@ -67,9 +67,23 @@ Deployed the v3 read-only diagnostic (`triggerStatsInflationDiagnostic`, `?full=
 - **The 2,108 Sidearm docs are still in Firestore**, now inert since they're filtered at aggregation. Purging them is optional cleanup, not a fix.
 - ⚠️ **Firestore REST encodes integers as `{"integerValue": "7"}` — a JSON string.** Any local analysis script must handle that branch or every score silently becomes a string and comparisons go lexicographic. This produced a false "inverted records" alarm this session. The app uses the Admin/Web SDK and gets real numbers; there is no such bug in the product.
 
-### Next session
-- **Step 2: the idempotency fix** in `aggregateSeasonStats` — must land before any playerStats rebuild, or February re-inflates everything.
-- **Step 3: rebuild `playerStats`** — zero affected aggregates, re-accumulate from canonical ncaa-api docs only.
+**Stats leaderboards — inflation fixed at the source, then rebuilt**
+- **Made aggregation idempotent.** `processOneBoxScore` read `statsProcessed`, aggregated, then set the flag — three separate steps. `boxScoresJob` fires every 2 min and slow runs outlive their interval, so runs overlapped: both read `false`, both aggregated, every `FieldValue.increment` applied twice. That is the whole inflation. The claim is now a transaction. Also **stopped swallowing the aggregation batch failure** — it was caught and logged, the caller marked the game processed anyway, and that game's stats were lost for the season with nothing to indicate it.
+- **Rebuilt all season totals** from 7,527 canonical `ncaa-*` games (dry run first). **26,531 players written; 20,227 corrected, 0 under-counted, 0 invented.** Every correction downward — the exact fingerprint of a double-count. Verified against four hand-computed players: Spallina 19/35/52, Humphrey 21/109/49, Tully 16GP/155sv, Murphy 22/113/21 — all exact. Worst cases were whole D2 women's teams at ~2.3x (Tampa: 43 GP → 19).
+
+**Goalkeeper leaderboard withheld — the source data isn't there**
+- Investigated whether women's goalie stats were a parsing bug. **They are not.** The NCAA API returns a **zero-filled per-player goalie block** for women's games. Sampled random D1 finals: player-level goalie saves present in **0 of 18 women's** and **4 of 12 men's (33%)**; team-level present in **100% of both**. `/individual-stats` is a 422 — there is no per-player goalie source in this API.
+- Consequence: only **12 women's D1 goalies league-wide** have any saves, and **35 of 75 men's** are under 4 saves/game. Ranking by season totals would rank "goalies whose teams happened to report". The tab now shows an honest hold message instead.
+
+### Parked / follow-ups (added)
+- **2,822 ghost `playerStats` docs** (legacy `m-*`/`w-*` ids, null teamName) still need purging — they hold 20 of the top 25 slots on the women's D1 saves board. Dry-run-first `task=purge-ghosts` is the plan.
+- **Team-defense stat** from `teamStats.goalie` (100% coverage, already stored) is the agreed replacement for the goalkeeper board.
+- **IAM gap:** `triggerBoxScores` / `triggerBackfill` / `testBoxScore` can't deploy — the account lacks `roles/functions.admin` to set the public invoker policy. Scheduled jobs are unaffected.
+
+### ⭐ Next session — Deemer's priority
+> "we need to find out how to get more of these player stats across levels more streamlined and efficient"
+
+The NCAA API is the only player-stats source today and it's structurally insufficient (see the goalie gap above; ~100 D2/D3 programs also have no games at all). Settle the source question — NCAA stat pages, school/Sidearm sites, conference feeds, or paid — before building more stats features. It has to cover D1/D2/D3 x men's/women's as one pipeline. The coverage gaps are worst exactly where competitors are weakest.
 
 ## 2026-05-28
 

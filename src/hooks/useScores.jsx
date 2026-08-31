@@ -92,6 +92,8 @@ export function useStatLeaders(gender, tab, division = '1') {
         setSource(reason)
       }
     }
+    // A null tab means the caller is rendering a withheld board; don't query.
+    if (!tab) { setRows([]); setSource('withheld'); setLoading(false); return }
     ;(async () => {
       setLoading(true)
       try {

@@ -38,6 +38,20 @@ const SAVE_COLS = [
   { k: 'ga', l: 'GA' }, { k: 'svpct', l: 'Sv%' }, { k: 'gaa', l: 'GAA' },
 ]
 
+// The Goalkeepers board is withheld. The NCAA API returns a zero-filled
+// per-player goalie block for women's games (0 of 18 sampled D1 finals had
+// saves) and only ~33% of men's games carry one. Only 12 women's D1 goalies
+// have any saves at all, and 35 of 75 men's are under 4 saves/game. Ranking by
+// season totals would rank "goalies whose teams happened to report", not the
+// best goalies. Team-level goalie stats ARE available on every game and are the
+// intended replacement. Restore this tab only when a per-player source exists.
+const WITHHELD = {
+  saves: {
+    title: 'GOALKEEPER STATS ARE ON HOLD',
+    body: "The NCAA feed doesn't publish per-player goalie lines for most games, so a saves leaderboard would be misleading. We're working on a better source.",
+  },
+}
+
 const TABS = [
   { key: 'goals',   label: 'Goals',       cols: GOAL_COLS,   hi: 'g'    },
   { key: 'assists', label: 'Assists',      cols: ASSIST_COLS, hi: 'a'    },
@@ -51,7 +65,8 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
   const [sortKey, setSortKey]     = useState(null)
   const [sortDir, setSortDir]     = useState('desc')
 
-  const { rows: data, loading, source } = useStatLeaders(gender, activeTab, division)
+  const withheld = WITHHELD[activeTab] || null
+  const { rows: data, loading, source } = useStatLeaders(gender, withheld ? null : activeTab, division)
   const tab  = TABS.find(t => t.key === activeTab)
   const ac_  = chip(isW)
 
@@ -102,8 +117,8 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
         </div>
       </div>
 
-      {/* Data source indicator */}
-      <div style={{
+      {/* Data source indicator — meaningless on a withheld tab, so hidden */}
+      {!withheld && <div style={{
         fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
         color: (source === 'none' || source === 'error') ? 'var(--red)' : source === 'firestore' ? 'var(--accent)' : source === 'mock' ? 'var(--muted)' : 'var(--yellow)',
         marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5,
@@ -113,15 +128,29 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
           background: (source === 'none' || source === 'error') ? 'var(--red)' : source === 'firestore' ? 'var(--accent)' : source === 'mock' ? 'var(--muted)' : 'var(--yellow)',
         }}/>
         {sourceLabel}
-      </div>
+      </div>}
 
-      {loading && (
+      {withheld && (
+        <div style={{
+          textAlign: 'center', padding: '60px 20px',
+          border: '1px dashed var(--border2)', margin: '20px 0',
+        }}>
+          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 22, marginBottom: 8 }}>
+            {withheld.title}
+          </div>
+          <div style={{ fontFamily: "'Barlow'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, maxWidth: 460, margin: '0 auto' }}>
+            {withheld.body}
+          </div>
+        </div>
+      )}
+
+      {!withheld && loading && (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)', fontFamily: "'Barlow Condensed'", fontSize: 16 }}>
           Loading stats...
         </div>
       )}
 
-      {!loading && rows.length === 0 && (
+      {!withheld && !loading && rows.length === 0 && (
         <div style={{
           textAlign: 'center', padding: '60px 20px',
           border: '1px dashed var(--border2)', margin: '20px 0',
@@ -136,7 +165,7 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
         </div>
       )}
 
-      {!loading && rows.length > 0 && (
+      {!withheld && !loading && rows.length > 0 && (
         <div className="leaderboard">
           <table className="lb-table">
             <thead>
