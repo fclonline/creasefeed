@@ -22,6 +22,7 @@ import { scrapeAllPolls } from './scrapers/polls.js'
 import { fetchNcaaScores, backfillScoreboards } from './scrapers/ncaaScores.js'
 import { aggregateRecords } from './scrapers/aggregateRecords.js'
 import { runStatsInflationDiagnostic } from './diagnostics/statsInflation.js'
+import { rebuildPlayerStats } from './diagnostics/rebuildPlayerStats.js'
 
 // Shared-secret token for the read-only diagnostic endpoint. Set with:
 //   firebase functions:secrets:set DIAGNOSTIC_TOKEN
@@ -207,8 +208,27 @@ export const triggerStatsInflationDiagnostic = onRequest({
     res.status(403).json({ ok: false, error: 'forbidden' })
     return
   }
-  console.log('[triggerStatsInflationDiagnostic] Read-only diagnostic triggered')
+  // `task` selects the job. Routed through this one endpoint rather than new
+  // functions because setting the public invoker policy on a newly created
+  // function needs roles/functions.admin, which this account does not have.
+  //   (default)      read-only inflation diagnostic
+  //   rebuild-dry    rebuild dry run  -- reports, writes nothing
+  //   rebuild-apply  rebuild for real -- REQUIRES &confirm=REBUILD
+  const task = String(req.query.task || 'inflation')
+  console.log(`[triggerStatsInflationDiagnostic] task=${task}`)
   try {
+    if (task === 'rebuild-dry') {
+      res.json(await rebuildPlayerStats({ dryRun: true }))
+      return
+    }
+    if (task === 'rebuild-apply') {
+      if (req.query.confirm !== 'REBUILD') {
+        res.status(400).json({ ok: false, error: 'refusing to write: pass &confirm=REBUILD' })
+        return
+      }
+      res.json(await rebuildPlayerStats({ dryRun: false }))
+      return
+    }
     const full = req.query.full === '1' || req.query.full === 'true'
     const result = await runStatsInflationDiagnostic({ full })
     res.json(result)
