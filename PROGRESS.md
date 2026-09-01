@@ -8,6 +8,36 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 
 ---
 
+## 2026-09-01
+
+### Shipped to production
+
+**Draw-controls leaderboard (women's) — validated against ncaa.com**
+- New women's-only board on the Stats page. TABS entries carry a `genders` field so a board only renders where the data exists: men's play face-offs, which the NCAA box score does not carry at all, so every men's doc is 0 there.
+- The index deploy was made purely additive first. `firestore.indexes.json` was missing two indexes that exist in prod, so a normal deploy would have silently deleted them. Added those, then deployed — exactly 1 index deleted, the stale `playerStats (gender,season,div,sv)`.
+
+**Two silent data-loss bugs, catchable only against an external reference**
+- **`contributed()` accepted only 10 of the 31 fields it accumulated**, and `drawControls` was not one. A draw specialist who won 19 draws but took no shot, scooped no ground ball and committed no turnover was indistinguishable from a bench player who never dressed, and her entire line was discarded on write. Ayla Galloway appeared in **all 20** Mercer box scores and was credited with **1 game / 11 draws**.
+- **Blank starters weren't counted.** A player who starts and records nothing still played. `participated` cannot detect this — it is set on **100% of blank lines** (118 of 118 sampled), so counting it would add ~15 phantom games per game. `starter` is the real signal (~4.5 blank starters/game vs ~10.5 blank non-starters, who may never have entered).
+- Fixed in `functions/src/statFields.js`, which now owns the counter list **and derives the gate from it** — a field can never again be accumulated without also counting as evidence the player took the field. Both the live aggregator and the rebuild import it, so they cannot drift.
+- Rebuild applied: **27,244 written, 6,906 players gaining games, 0 losing any, 407 newly created** (their every game had failed the gate, so no doc ever existed). Contrast the inflation rebuild: 20,227 down, 0 up.
+
+**Result vs ncaa.com:** 4 of 5 reference players match exactly, to two decimals on per-game (Galloway 20g / 187dc / **9.35**). The 5th, Racheli Levy-Smith, is a genuine source omission — she is absent from the Holy Cross/UMass 2026-02-06 box score entirely, so her 11 draws that day do not exist in the feed.
+
+**Frontend no longer reads retired Sidearm docs.** 280 legacy docs carried a `gameDate` and so matched the date-filtered queries; 169 had placeholder team names — the "AWAY · LEHIGH" artifacts (Lehigh 19x, Penn State 37x, Princeton 32x). Only 6 duplicated a real game; 274 were pure phantoms. This was the stated precondition for purging the legacy `/games` docs.
+
+**Ghost purge applied** — 2,821 orphan `playerStats` docs deleted (legacy ids, zero canonical appearances). `zeroGameCandidates` is now 0.
+
+**Season-aware pipeline (2027-ready).** `SEASON` was hardcoded in six backend files plus the frontend. `functions/src/season.js` is now the single definition; `aggregateRecords` resolves the season **from the data** (newest season with a final game) and publishes it to `/config/site`, which the frontend reads — so the rollover needs no redeploy. Deliberately not `currentSeason()`, which is already '2027' in the offseason and would have emptied `/records` and blanked every W-L. Schedules now load on a 14-day forward window (was today+yesterday only), throttled in waves of 4; `scrapeNightly` runs year-round (was Feb–June, which would never have seen a schedule posted in Dec/Jan).
+
+### Parked / follow-ups
+- **Fall ball is not in the NCAA API** — verified: every fall date returns 0 games while spring dates return games. Needs a different source. The season model already handles it — an Oct 2026 game resolves to the 2027 season.
+- **Goalkeeper board still withheld.** The 7-field goalie schema gap was real and is now captured, but that doesn't create values the source doesn't send: per-player goalie values are zero-filled for women's and ~33% present for men's.
+- **Men's leaderboards have NOT been externally validated.** The same gate bug affected `freePositionShots` and penalty-only lines for men too. Compare points / ground balls against ncaa.com before the 2027 season.
+- Team-defense stat; D2/D3 no-record split (held pending the variant-vs-no-data split); IAM `roles/functions.admin` (Deemer's side).
+
+---
+
 ## 2026-08-27
 
 ### Shipped to production
