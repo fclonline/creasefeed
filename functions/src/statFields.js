@@ -35,14 +35,23 @@ export const COUNTER_FIELDS = [
   'ppGoalsAllowed', 'shGoalsAllowed', 'enGoalsAllowed', 'soGoalsAllowed',
 ]
 
-// A player earns a game played if any counted stat is non-zero.
+// A player earns a game played if any counted stat is non-zero, OR they started.
 //
-// The NCAA API marks every dressed player participated:true, including bench
-// players with an all-zero line, so `participated` cannot be used for this --
-// it would inflate gp for everyone who suited up. Requiring one non-zero stat
-// is the closest available proxy for actually taking the field.
+// `participated` is useless here: sampled D1 box scores show it set on 100% of
+// blank lines (118 of 118), i.e. on everyone listed whether they took the field
+// or not. Counting it would add ~15 phantom games per game.
+//
+// `starter` is different -- a blank line on a starter means they took the field
+// and recorded nothing, which is a real game played. Blank starters run ~4.5 per
+// game against ~10.5 blank non-starters (who may never have entered, and can't
+// be distinguished from those who did).
+//
+// This is what closed the last gap against ncaa.com: Ayla Galloway started
+// Mercer's 2026-02-25 game and recorded nothing. Without the starter clause she
+// showed 19 games and 9.84 draws/game; with it, 20 and 9.35 -- ncaa.com exactly.
 export function contributed(p) {
   if (!p) return false
+  if (p.starter === true) return true
   for (const f of COUNTER_FIELDS) {
     if ((p[f] || 0) !== 0) return true
   }
