@@ -462,6 +462,39 @@ export async function backfillBoxScores() {
 }
 
 // ── single-game test: used by HTTP trigger for diagnostics ──────────────────
+// ── date-ranged box score backfill ──────────────────────────────────────────
+// Fetches box scores for final ncaa-* games in a date window that haven't been
+// aggregated yet.
+//
+// Exists because `triggerBackfill` cannot currently be redeployed -- setting its
+// public invoker policy needs roles/functions.admin, which the account lacks --
+// so the deployed copy still runs the OLD source bundle, with the pre-transaction
+// claim and the pre-fix participation gate. Running it would reintroduce both
+// bugs. This is reached through triggerStatsInflationDiagnostic instead, which
+// deploys cleanly and therefore always runs current code.
+//
+// Written for the January 2026 gap: boxScoresJob and scrapeNightly were gated to
+// Feb-May and the scraper only fetched today+yesterday, so season-opening games
+// in January were never pulled -- 21 games across 2026-01-30/31.
+export async function backfillBoxScoresForDates({ start, end }) {
+  if (!/^\d{8}$/.test(String(start)) || !/^\d{8}$/.test(String(end))) {
+    throw new Error(`[boxscore-backfill] start/end must be YYYYMMDD (got ${start}/${end})`)
+  }
+  const snap = await db.collection('games')
+    .where('season', 'in', activeSeasons())
+    .where('status', '==', 'final')
+    .where('gameDate', '>=', String(start))
+    .where('gameDate', '<=', String(end))
+    .get()
+
+  const all = snap.docs.filter(d => d.id.startsWith('ncaa-'))
+  const todo = all.filter(d => d.data().statsProcessed !== true)
+  console.log(`[boxscore-backfill] ${start}..${end}: ${all.length} ncaa games, ${todo.length} unaggregated`)
+
+  const result = await runWithConcurrency(todo, processBoxScoreDoc, CONCURRENCY)
+  return { start, end, ncaaGamesInRange: all.length, alreadyProcessed: all.length - todo.length, ...result }
+}
+
 export async function processOneBoxScore(ncaaGameId) {
   const docId = `ncaa-${ncaaGameId}`
   const ref   = db.collection('games').doc(docId)

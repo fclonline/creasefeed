@@ -17,7 +17,7 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { onRequest  } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
-import { fetchAllBoxScores, backfillBoxScores, processOneBoxScore } from './scrapers/ncaaBoxScores.js'
+import { fetchAllBoxScores, backfillBoxScores, processOneBoxScore, backfillBoxScoresForDates } from './scrapers/ncaaBoxScores.js'
 import { scrapeAllPolls } from './scrapers/polls.js'
 import { fetchNcaaScores, backfillScoreboards } from './scrapers/ncaaScores.js'
 import { aggregateRecords } from './scrapers/aggregateRecords.js'
@@ -221,6 +221,19 @@ export const triggerStatsInflationDiagnostic = onRequest({
   try {
     if (task === 'rebuild-dry') {
       res.json(await rebuildPlayerStats({ dryRun: true }))
+      return
+    }
+    // Box-score backfill for a date window. Routed here rather than through
+    // triggerBackfill, which is stuck on the old source bundle until the IAM
+    // role lands and would reintroduce the race + gate bugs.
+    if (task === 'backfill-boxscores') {
+      const start = String(req.query.start || '')
+      const end   = String(req.query.end   || '')
+      if (req.query.confirm !== 'BACKFILL') {
+        res.status(400).json({ ok: false, error: 'refusing to write: pass &confirm=BACKFILL' })
+        return
+      }
+      res.json({ ok: true, ...(await backfillBoxScoresForDates({ start, end })) })
       return
     }
     if (task === 'purge-ghosts-dry') {

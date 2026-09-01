@@ -271,6 +271,28 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "playerStats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "div",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "groundBalls",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
