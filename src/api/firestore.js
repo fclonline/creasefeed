@@ -255,7 +255,10 @@ function normPos(raw) {
 // ── Fetch stat leaders from aggregated playerStats ────────────────────────────
 export async function fetchStatLeaders(gender, stat = 'goals', division = '1') {
   try {
-    const orderField = stat === 'saves' ? 'saves' : stat === 'assists' ? 'assists' : 'goals'
+    const orderField =
+      stat === 'saves'   ? 'saves' :
+      stat === 'assists' ? 'assists' :
+      stat === 'draws'   ? 'drawControls' : 'goals'
     const q = query(
       collection(db, 'playerStats'),
       where('gender', '==', gender),
@@ -294,6 +297,10 @@ export async function fetchStatLeaders(gender, stat = 'goals', division = '1') {
         svpct,
         gaa,
         apg:    r.gp ? (r.assists / r.gp).toFixed(1) : '—',
+        // Draw controls: the women's possession stat, and the only face-off
+        // equivalent the NCAA box score carries. Men's docs are all 0 here.
+        dc:     r.drawControls || 0,
+        dcpg:   r.gp ? ((r.drawControls || 0) / r.gp).toFixed(1) : '—',
         _source: 'firestore',
       }
     })

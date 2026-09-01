@@ -4,102 +4,272 @@
       "collectionGroup": "games",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "gender", "order": "ASCENDING" },
-        { "fieldPath": "season", "order": "ASCENDING" },
-        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "games",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "gender", "order": "ASCENDING" },
-        { "fieldPath": "season", "order": "ASCENDING" },
-        { "fieldPath": "gameDate", "order": "ASCENDING" },
-        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "gameDate",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "games",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "gender", "order": "ASCENDING" },
-        { "fieldPath": "season", "order": "ASCENDING" },
-        { "fieldPath": "gameDate", "order": "ASCENDING" },
-        { "fieldPath": "div", "order": "ASCENDING" },
-        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "gameDate",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "div",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "games",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "season", "order": "ASCENDING" }
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "playerStats",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "gender", "order": "ASCENDING" },
-        { "fieldPath": "season", "order": "ASCENDING" },
-        { "fieldPath": "goals", "order": "DESCENDING" }
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "goals",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "playerStats",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "gender", "order": "ASCENDING" },
-        { "fieldPath": "season", "order": "ASCENDING" },
-        { "fieldPath": "assists", "order": "DESCENDING" }
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "assists",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "playerStats",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "gender", "order": "ASCENDING" },
-        { "fieldPath": "season", "order": "ASCENDING" },
-        { "fieldPath": "div", "order": "ASCENDING" },
-        { "fieldPath": "goals", "order": "DESCENDING" }
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "div",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "goals",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "playerStats",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "gender", "order": "ASCENDING" },
-        { "fieldPath": "season", "order": "ASCENDING" },
-        { "fieldPath": "div", "order": "ASCENDING" },
-        { "fieldPath": "assists", "order": "DESCENDING" }
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "div",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "assists",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "playerStats",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "gender", "order": "ASCENDING" },
-        { "fieldPath": "season", "order": "ASCENDING" },
-        { "fieldPath": "div", "order": "ASCENDING" },
-        { "fieldPath": "saves", "order": "DESCENDING" }
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "div",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "saves",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "playerStats",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "season", "order": "ASCENDING" },
-        { "fieldPath": "goals", "order": "DESCENDING" }
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "goals",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "playerStats",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "season", "order": "ASCENDING" },
-        { "fieldPath": "saves", "order": "DESCENDING" }
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "saves",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "games",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "div",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "games",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "gameDate",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "playerStats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "gender",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "season",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "div",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "drawControls",
+          "order": "DESCENDING"
+        }
       ]
     }
   ],

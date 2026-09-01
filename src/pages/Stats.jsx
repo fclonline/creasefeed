@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useStatLeaders } from '../hooks/useScores.jsx'
 import { chip, ac } from '../components/shared.jsx'
 import { PROGRAMS, getProgramById, normTeam } from '../data/programs.js'
@@ -52,10 +52,21 @@ const WITHHELD = {
   },
 }
 
+const DRAW_COLS = [
+  { k: 'rank', l: '#' }, { k: 'name', l: 'Player' }, { k: 'team', l: 'Team' },
+  { k: 'pos', l: 'Pos' }, { k: 'gp', l: 'GP' }, { k: 'dc', l: 'Draws' },
+  { k: 'g', l: 'G' }, { k: 'a', l: 'A' }, { k: 'dcpg', l: 'DC/G' },
+]
+
+// `genders` limits a board to where the data exists. Draw controls are the
+// women's game's possession stat -- men's play face-offs, which the NCAA box
+// score does not carry at all, so every men's doc is 0 here and a men's draw
+// board would be 25 rows of zeros.
 const TABS = [
-  { key: 'goals',   label: 'Goals',       cols: GOAL_COLS,   hi: 'g'    },
-  { key: 'assists', label: 'Assists',      cols: ASSIST_COLS, hi: 'a'    },
-  { key: 'saves',   label: 'Goalkeepers', cols: SAVE_COLS,   hi: 'sv'   },
+  { key: 'goals',   label: 'Goals',        cols: GOAL_COLS,   hi: 'g'  },
+  { key: 'assists', label: 'Assists',      cols: ASSIST_COLS, hi: 'a'  },
+  { key: 'saves',   label: 'Goalkeepers',  cols: SAVE_COLS,   hi: 'sv' },
+  { key: 'draws',   label: 'Draw Controls', cols: DRAW_COLS,  hi: 'dc', genders: ['W'] },
 ]
 
 const NON_NUMERIC = ['rank', 'name', 'team', 'pos']
@@ -65,9 +76,16 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
   const [sortKey, setSortKey]     = useState(null)
   const [sortDir, setSortDir]     = useState('desc')
 
+  const tabsForGender = TABS.filter(t => !t.genders || t.genders.includes(gender))
+  // Switching to men's while on a women's-only board would query a stat that is
+  // all zeros, so fall back to Goals.
+  useEffect(() => {
+    if (!tabsForGender.some(t => t.key === activeTab)) setActiveTab('goals')
+  }, [gender])
+
   const withheld = WITHHELD[activeTab] || null
   const { rows: data, loading, source } = useStatLeaders(gender, withheld ? null : activeTab, division)
-  const tab  = TABS.find(t => t.key === activeTab)
+  const tab  = TABS.find(t => t.key === activeTab) || TABS[0]
   const ac_  = chip(isW)
 
   // TODO: player profile — for v1, clicking a row navigates to the player's team page.
@@ -107,7 +125,7 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
   return (
     <div className="stats-page">
       <div className="stats-tabs">
-        {TABS.map(t => (
+        {tabsForGender.map(t => (
           <button key={t.key} className={`stat-tab ${activeTab === t.key ? ac_ : ''}`} onClick={() => { setActiveTab(t.key); setSortKey(null) }}>
             {t.label}
           </button>

@@ -23,33 +23,14 @@
 // ============================================================================
 
 import { db } from '../firebase.js'
+import { COUNTER_FIELDS as COUNTERS, contributed } from '../statFields.js'
 
 const SEASON = '2026'
 const PAGE_SIZE = 300
 const COMMIT_CHUNK = 400      // Firestore batch limit is 500
 const MAX_REPORT_ROWS = 60
 
-// Counter fields, mirroring aggregateSeasonStats in ncaaBoxScores.js.
-const COUNTERS = [
-  'goals', 'assists', 'points', 'shots', 'sog', 'freePositionShots',
-  'groundBalls', 'drawControls', 'turnovers', 'causedTurnovers',
-  'gameWinningGoals', 'overtimeGoals', 'powerplayGoals', 'shortHandedGoals',
-  'freePositionGoals', 'penaltyCount', 'penaltyMinutes', 'majorPenalties',
-  'minorPenalties', 'saves', 'goalsAllowed', 'goalieMinutes', 'shutouts',
-  'goalieGamesStarted', 'goalieGamesPlayed', 'goalieLosses', 'combinedShutouts',
-  'ppGoalsAllowed', 'shGoalsAllowed', 'enGoalsAllowed', 'soGoalsAllowed',
-]
 
-// Must match aggregateSeasonStats exactly, or gp will not line up: the NCAA API
-// marks every dressed player participated:true, including bench players with an
-// all-zero line, and those must not earn a game played.
-function contributed(p) {
-  return !!(
-    p.goals || p.assists || p.shots || p.groundBalls ||
-    p.turnovers || p.causedTurnovers || p.saves ||
-    p.goalsAllowed || p.penaltyCount || p.goalieMinutes > 0
-  )
-}
 
 function sortedTeamPair(a, b) {
   const x = (a || '').trim().toLowerCase()

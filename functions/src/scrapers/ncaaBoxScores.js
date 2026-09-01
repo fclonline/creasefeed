@@ -20,6 +20,7 @@ import fetch from 'node-fetch'
 import { FieldValue } from 'firebase-admin/firestore'
 import { db } from '../firebase.js'
 import { seasonForGameDate, currentSeason, activeSeasons } from '../season.js'
+import { contributed } from '../statFields.js'
 const BOXSCORE_API_BASE = 'https://ncaa-api.henrygd.me/game'
 const CONCURRENCY = 3            // public API rate limit is 5/sec; stay under
 const REQUEST_DELAY_MS = 250     // per-worker throttle
@@ -290,11 +291,7 @@ async function aggregateSeasonStats(players, gameContext, teamMap) {
     // including bench players with zero minutes and an all-zero stat line —
     // those would otherwise get a season doc with gp incremented. Require a
     // meaningful stat or goalie time on the field.
-    const contributed =
-      p.goals || p.assists || p.shots || p.groundBalls ||
-      p.turnovers || p.causedTurnovers || p.saves ||
-      p.goalsAllowed || p.penaltyCount || p.goalieMinutes > 0
-    if (!contributed) continue
+    if (!contributed(p)) continue
 
     const ref = db.collection('playerStats').doc(p.playerId)
 
