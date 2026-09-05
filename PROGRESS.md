@@ -139,6 +139,31 @@ more dangerous than nothing: an empty state is honest, an 11-save season line lo
    the goalie gap, and another input to the streamlined-source question. Interim option is
    to hide the POS column when most rows are blank rather than print a column of dashes.
 
+3. **The "season totals unverified" label is now stale — but the fix is not "verified".**
+   `src/pages/Stats.jsx:116` renders one blanket string keyed only on `source` (always
+   `'ncaa'`), in caution yellow, for every board. It has no awareness of gender, division
+   or stat, so it says the same thing over boards we have now checked exactly and boards
+   nobody has ever checked.
+
+   Validation status as of today is genuinely **scope-dependent**:
+
+   | Scope | Status |
+   |---|---|
+   | Men's D1 goals | exact, 5 of 5 checked incl. the #1 player |
+   | Women's D1 goals | exact, 10 of 10 — the whole published top ten |
+   | Women's D1 assists | 9 of 11; 2 off by one, source ceiling, not our bug |
+   | Women's D1 draw controls | 4 of 5 (2026-09-01) |
+   | D2 / D3, any board | **never validated** |
+   | Goalkeepers | withheld |
+
+   So flipping the string to "verified" would be a different lie. Key the label on
+   `(gender, division, stat)` and say what is actually true per view — validated D1 boards
+   get a confident green label, D2/D3 keeps the caution. And the confident wording still
+   should not claim to match the official record: we match the **box scores**, which the
+   Spallina/Humphrey assist gap shows can differ from ncaa.com's leaderboard by a small
+   margin. Something like "matches NCAA box scores" is accurate; "verified" is not.
+
+
 
 ---
 
