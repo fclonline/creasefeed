@@ -114,20 +114,28 @@ more dangerous than nothing: an empty state is honest, an 11-save season line lo
 
 ### Queued todos (Deemer, 2026-09-05)
 
-1. **Add January games to the schedule viewer.** The 31 January games backfilled today are
-   in Firestore but **unreachable in the UI** — `src/pages/Schedule.jsx` hardcodes a
-   Feb-start season in three places:
-   - `buildSeasonDates()` (line 14) builds the date strip `for (let m = 1; m <= 4; m++)`
-     — Feb 1 to May 31, so January dates do not exist to select.
-   - `seasonMonths` (line 126) is `[1, 2, 3, 4]`, so there is no January tab.
-   - `SEASON_YEAR = 2026` (line 7) is hardcoded.
+1. ~~**Add January games to the schedule viewer.**~~ **DONE 2026-09-05 — committed, NOT
+   yet deployed.** `src/pages/Schedule.jsx` had the Feb-start assumption in three places:
+   `buildSeasonDates()` built the date strip `for (let m = 1; m <= 4; m++)`, `seasonMonths`
+   was `[1,2,3,4]`, and `SEASON_YEAR` was a hardcoded `2026`. A fourth layer of the same
+   assumption that cost us the games themselves.
 
-   This is **the same "the season starts in February" assumption that caused the data gap**,
-   now as a fourth layer in the frontend. Fixing only `seasonMonths` is not enough — the tab
-   would render but `jumpToMonth` searches `ALL_DATES`, which has no January entries.
-   While in here: `SEASON_YEAR` should come from `/config/site`, which `aggregateRecords`
-   already publishes, or the Schedule page will still read 2026 after the rollover even
-   though the rest of the pipeline is now season-aware.
+   Now: `SEASON_MONTHS = [0..4]` drives both the strip and the tabs from one constant, and
+   the year resolves from `/config/site` via `getSeason()`/`initSeason()` — so the 2027
+   rollover needs no redeploy here either. Landing date is unchanged (today if in season,
+   else Feb 1) on purpose: opening on Jan 1 would show four empty weeks before the first
+   game, and January is one tab away.
+
+   Verified against live data in the dev server, no console errors:
+
+   | Date | View | Renders |
+   |---|---|---|
+   | Jan 30 | M D1 | **Utah 16 @ Delaware 9** — McNamara's opener, the game that made him 13 gp |
+   | Jan 31 | M D1 | 8 games incl. **Rutgers 11 @ Jacksonville 10** — Rippeon's opener |
+   | Jan 30 | W D2 | Emmanuel (GA) @ Flagler, Montevallo @ Newberry, UAH @ Anderson (SC) |
+
+   Counts by scope: Jan 30 M 8 (D1 2 / D2 5 / D3 1), W 3 (all D2); Jan 31 M 11 (D1 8 /
+   D2 1 / D3 2), W 0. The women's-D1-blank is correct, not a bug — there are none.
 
 2. **Positions are missing for many players on the Stats boards.** Not a mapping bug —
    `POS_MAP`/`normPos` (`src/api/firestore.js:243`) handle every code the feed sends, and

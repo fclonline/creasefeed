@@ -2,27 +2,38 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useScores } from '../hooks/useScores.jsx'
 import { GameModal, CollapsibleFilter, chip, ac } from '../components/shared.jsx'
 import { getConferences } from '../data/programs.js'
+import { getSeason, initSeason } from '../api/firestore.js'
 
-// Generate all dates from Feb 1 through May 31, 2026
-const SEASON_YEAR = 2026
 const DAY_NAMES = ['SUN','MON','TUE','WED','THU','FRI','SAT']
 const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
 const MONTH_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
-function buildSeasonDates() {
+// Jan 1 through May 31. January is real season: 31 games opened 2026 there, and
+// they were invisible here until 2026-09-05 because this file assumed a February
+// start -- the same assumption that had already cost us the games themselves in
+// three backend layers (boxScoresJob, scrapeNightly, backfillScoreboards).
+const SEASON_MONTHS = [0, 1, 2, 3, 4] // 0-indexed: Jan..May
+
+function buildSeasonDates(year) {
   const dates = []
-  // Feb 1 through May 31
-  for (let m = 1; m <= 4; m++) { // 0-indexed: 1=Feb, 4=May
-    const daysInMonth = new Date(SEASON_YEAR, m + 1, 0).getDate()
+  for (const m of SEASON_MONTHS) {
+    const daysInMonth = new Date(year, m + 1, 0).getDate()
     for (let d = 1; d <= daysInMonth; d++) {
-      const dt = new Date(SEASON_YEAR, m, d)
-      dates.push(dt)
+      dates.push(new Date(year, m, d))
     }
   }
   return dates
 }
 
-const ALL_DATES = buildSeasonDates()
+// Which date to open on. Today if the season is running, otherwise Feb 1:
+// most programs open in February, and landing on Jan 1 would show four empty
+// weeks before the first game. January stays one tab away.
+function defaultDateIndex(dates, today) {
+  const t = dates.findIndex(d => isSameDay(d, today))
+  if (t >= 0) return t
+  const feb = dates.findIndex(d => d.getMonth() === 1 && d.getDate() === 1)
+  return feb >= 0 ? feb : 0
+}
 
 function dateToParam(d) {
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`
@@ -34,8 +45,21 @@ function isSameDay(a, b) {
 
 export default function SchedulePage({ gender, division, isW }) {
   const today = new Date()
-  const todayIdx = ALL_DATES.findIndex(d => isSameDay(d, today))
-  const [selectedIdx, setSelectedIdx] = useState(todayIdx >= 0 ? todayIdx : 0)
+  // The season comes from /config/site (published by aggregateRecords from the
+  // data itself), so the rollover to 2027 needs no redeploy. getSeason() is the
+  // first-paint fallback for the moment before that doc resolves.
+  const [seasonYear, setSeasonYear] = useState(() => Number(getSeason()))
+  useEffect(() => {
+    let live = true
+    initSeason().then(s => { if (live) setSeasonYear(Number(s)) })
+    return () => { live = false }
+  }, [])
+
+  const ALL_DATES = useMemo(() => buildSeasonDates(seasonYear), [seasonYear])
+  const todayIdx  = useMemo(() => ALL_DATES.findIndex(d => isSameDay(d, today)), [ALL_DATES])
+  const [selectedIdx, setSelectedIdx] = useState(() => defaultDateIndex(buildSeasonDates(Number(getSeason())), new Date()))
+  // Re-anchor if the resolved season differs from the first-paint fallback.
+  useEffect(() => { setSelectedIdx(defaultDateIndex(ALL_DATES, new Date())) }, [seasonYear])
   const [confFilter,   setConfFilter]   = useState('All')
   // Default to the user's global gender choice, but let them switch to "Both"
   // here without changing their global preference.
@@ -122,9 +146,6 @@ export default function SchedulePage({ gender, division, isW }) {
   const selected   = selectedId ? allGames.find(g => g.id === selectedId) : null
   const selIsW     = selected?.gender === 'W'
 
-  // Month tabs for quick jumping
-  const seasonMonths = [1, 2, 3, 4] // Feb, Mar, Apr, May (0-indexed)
-
   function jumpToMonth(monthIdx) {
     const idx = ALL_DATES.findIndex(d => d.getMonth() === monthIdx)
     if (idx >= 0) setSelectedIdx(idx)
@@ -187,7 +208,7 @@ export default function SchedulePage({ gender, division, isW }) {
     <div className="schedule-page">
       {/* Month tabs */}
       <div className="sched-month-bar">
-        {seasonMonths.map(m => (
+        {SEASON_MONTHS.map(m => (
           <button
             key={m}
             className={`sched-month-btn ${selectedMonth === m ? (isW ? 'active-w' : 'active-m') : ''}`}
@@ -234,8 +255,8 @@ export default function SchedulePage({ gender, division, isW }) {
       <div className="sched-selected-label">
         {selectedDate && (
           isSameDay(selectedDate, today)
-            ? `TODAY · ${DAY_NAMES[selectedDate.getDay()]}, ${MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getDate()}, ${SEASON_YEAR}`
-            : `${DAY_NAMES[selectedDate.getDay()]}, ${MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getDate()}, ${SEASON_YEAR}`
+            ? `TODAY · ${DAY_NAMES[selectedDate.getDay()]}, ${MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getDate()}, ${seasonYear}`
+            : `${DAY_NAMES[selectedDate.getDay()]}, ${MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getDate()}, ${seasonYear}`
         )}
       </div>
 
