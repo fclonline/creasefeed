@@ -8,6 +8,61 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 
 ---
 
+## 2026-09-05
+
+### Shipped to production (data only — no code change)
+
+**The January gap is closed. Men's leaderboards now validate exactly against ncaa.com.**
+
+Ran the two-step backfill that `37fe80d` built but never executed. It has to be two steps:
+`backfillBoxScoresForDates` only aggregates game docs that already exist, and the January
+docs were absent — so the scoreboard half must run first to create them.
+
+1. `triggerScoreboardBackfill?start=2026-01-01&end=2026-02-01`
+   → `datesProcessed 32, fetched 31, written 31, errors 0`
+2. `triggerStatsInflationDiagnostic?task=backfill-boxscores&start=20260101&end=20260201&confirm=BACKFILL`
+   → `ncaaGamesInRange 27, alreadyProcessed 8, success 19, errors 0, skipped 0`
+
+**31 games recovered, not the 21 that `37fe80d` identified on Jan 30/31.** Running the whole
+month rather than just the two known dates picked up 10 more from earlier January. Worth
+remembering: the investigation found the dates it went looking for, not all of them.
+
+**Validated against ncaa.com** (season complete, "through games Monday, May 25, 2026" —
+an external reference, not the API we ingest from):
+
+| Player | Team | Ours | ncaa.com |
+|---|---|---|---|
+| Luke McNamara | Utah | 60g / 14gp = **4.29** | **4.29** (rank 1) — was 4.23 |
+| Willem Firth | Cornell | 52g / 16gp = 3.25 | 3.25 |
+| Mikey Weisshaar | Towson | 47g / 15gp = 3.13 | 3.13 |
+| Dominic Pietramala | North Carolina | 55g / 18gp = 3.06 | 3.06 |
+| Truitt Sunderland | Virginia | 51g / 17gp = 3.00 | 3.00 |
+
+McNamara is the whole point: he is **#1 in the country in goals per game** and we had him
+wrong until now. 55/13 = 4.23 against a true 4.29. The other four already matched and still
+match — the backfill added no double-counting, which is the regression that mattered given
+the aggregation race this pipeline has a history of. All six previously off-by-one Utah and
+Jacksonville players now sit at their correct game counts (Utah's roster max gp = 14, with
+11 players there).
+
+### Parked / follow-ups
+- **Names are stored with the source's casing — `"Luke Mcnamara"`, lowercase `n`**, where
+  ncaa.com writes `"Luke McNamara"`. Found while searching for him. Anything doing a
+  case-sensitive name lookup (site search, any future join on name) will miss these.
+  Affects internal caps generally — Mc/Mac/O'/De.
+- **Step 1 wrote 31 games but step 2 only saw 27 in range.** The 4-doc difference is games
+  that are not `final` or not `ncaa-` prefixed. Benign for stats, unconfirmed in detail.
+- **`alreadyProcessed: 8`** — January was never a total blackout, so the "nothing before
+  February was ever pulled" framing was slightly too strong.
+- **Women's leaderboards still have no equivalent full external validation.** Only the draw
+  board was checked (2026-09-01, 4 of 5 exact). Goals/points/ground balls unverified.
+- **The Firebase CLI credential on this machine is expired** (`firebase login --reauth`).
+  Secret Manager access is needed for any `triggerStatsInflationDiagnostic` task.
+- Carried over: team-defense stat; D2/D3 no-record split; IAM `roles/functions.admin`;
+  fall ball absent from the NCAA API; ⭐ the streamlined multi-level player-stats source.
+
+---
+
 ## 2026-09-01
 
 ### Shipped to production
@@ -33,7 +88,7 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 ### Parked / follow-ups
 - **Fall ball is not in the NCAA API** — verified: every fall date returns 0 games while spring dates return games. Needs a different source. The season model already handles it — an Oct 2026 game resolves to the 2027 season.
 - **Goalkeeper board still withheld.** The 7-field goalie schema gap was real and is now captured, but that doesn't create values the source doesn't send: per-player goalie values are zero-filled for women's and ~33% present for men's.
-- **Men's leaderboards have NOT been externally validated.** The same gate bug affected `freePositionShots` and penalty-only lines for men too. Compare points / ground balls against ncaa.com before the 2027 season.
+- ~~**Men's leaderboards have NOT been externally validated.**~~ Done 2026-09-05 — validated against ncaa.com, exact on 5 of 5 checked. See that entry.
 - Team-defense stat; D2/D3 no-record split (held pending the variant-vs-no-data split); IAM `roles/functions.admin` (Deemer's side).
 
 ---
