@@ -23,7 +23,7 @@
 // ============================================================================
 
 import { db } from '../firebase.js'
-import { COUNTER_FIELDS as COUNTERS, contributed } from '../statFields.js'
+import { COUNTER_FIELDS as COUNTERS, contributed, hasPosition } from '../statFields.js'
 
 const SEASON = '2026'
 const PAGE_SIZE = 300
@@ -133,6 +133,9 @@ export async function rebuildPlayerStats({ dryRun = true } = {}) {
         for (const f of COUNTERS) rec[f] = 0
         totals.set(p.playerId, rec)
       }
+      // Position is blank in most box scores. Take any non-blank one rather
+      // than whichever game came first -- see hasPosition() in statFields.js.
+      if (!hasPosition(rec.position) && hasPosition(p.position)) rec.position = p.position
       rec.gp++
       for (const f of COUNTERS) rec[f] += (p[f] || 0)
     }

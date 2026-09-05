@@ -57,3 +57,18 @@ export function contributed(p) {
   }
   return false
 }
+
+// ── Position ────────────────────────────────────────────────────────────────
+// The NCAA box score reports `position` PER GAME, and leaves it blank in most
+// of them. Sampled across Utah and North Carolina: 1,489 blank appearances vs
+// 373 with a value, and 55 of 397 players were blank in some games and set in
+// others. Both writers used to take whichever game they happened to see -- the
+// live aggregator overwrote on every game (so the last one, usually blank, won)
+// and the rebuild kept the first. Either way a known position was thrown away:
+// 25 of the men's D1 top 40 scorers rendered as "—", Luke McNamara included.
+//
+// `*` is the feed's own placeholder, not a position, so it counts as blank.
+export function hasPosition(raw) {
+  const v = String(raw || '').trim()
+  return v !== '' && v !== '*'
+}

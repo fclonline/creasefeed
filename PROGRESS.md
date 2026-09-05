@@ -137,15 +137,40 @@ more dangerous than nothing: an empty state is honest, an 11-save season line lo
    Counts by scope: Jan 30 M 8 (D1 2 / D2 5 / D3 1), W 3 (all D2); Jan 31 M 11 (D1 8 /
    D2 1 / D3 2), W 0. The women's-D1-blank is correct, not a bug — there are none.
 
-2. **Positions are missing for many players on the Stats boards.** Not a mapping bug —
-   `POS_MAP`/`normPos` (`src/api/firestore.js:243`) handle every code the feed sends, and
-   `'—'` is the correct render for an empty value. **The source omits the field**: of the
-   men's D1 top 40 by goals, `position` is `''` on **25 of 40 (62%)**, `'a'` on 13, `'m'`
-   on 2. Luke McNamara, the national leader, has no position.
+2. ~~**Positions are missing for many players.**~~ **DONE & DEPLOYED 2026-09-05.**
+   The logged diagnosis — "a source gap, needs a roster source" — was **wrong**. The data
+   was already in Firestore and we were throwing it away. Two compounding bugs:
 
-   So this needs a **roster source**, not a frontend change — the same shape of problem as
-   the goalie gap, and another input to the streamlined-source question. Interim option is
-   to hide the POS column when most rows are blank rather than print a column of dashes.
+   - **The aggregator overwrote a known position with a blank.** The NCAA box score reports
+     `position` PER GAME and leaves it blank in most. `ncaaBoxScores.js` set
+     `position: p.position` on every game, so the last game processed won — and for the
+     sampled players the last game was blank every time. `rebuildPlayerStats.js` had the
+     mirror-image bug, keeping whichever game came *first*. Sampling Utah + North Carolina:
+     1,489 blank appearances vs 373 with a value, and **55 of 397 players were blank in some
+     games and set in others** — every one of them recoverable, all of them lost.
+   - **`POS_MAP` was missing the full-word vocabulary.** The feed uses two, sometimes within
+     one team's season: `a`/`A`/`m`/`d` **and** `Attacker`/`Midfielder`/`Defender`/
+     `Goalkeeper`. 187 of 373 non-blank values fell through to `—` even when they survived.
+
+   Fix: `hasPosition()` in `statFields.js` (the existing home for shared invariants) is now
+   the single rule, treating the feed's `*` placeholder as blank. The live aggregator omits
+   `position` when blank so the merge preserves what we know; the rebuild upgrades to any
+   non-blank value. `POS_MAP` gained `attacker`/`midfielder`/`defender`/`ssdm`.
+
+   Rebuild applied with **zero counter movement** — the dry run showed `corrected: 0` and
+   `gpDelta` all zero, so `position` was the only field that could change. Coverage, share
+   of top-300 scorers now rendering a position:
+
+   | | D1 | D2 | D3 |
+   |---|---|---|---|
+   | Men's | **95%** | 43% | 53% |
+   | Women's | **93%** | 75% | 48% |
+
+   Men's D1 top 40 went from **25 of 40 blank to 1 of 40**. Verified live: McNamara, Cook,
+   Morgan, Alie and Weisshaar all rendered `—` in Deemer's screenshot and now read ATT/MID.
+
+   Residual D2/D3 blanks look like a genuine source gap — those go with the roster-source
+   question, but they are no longer the whole story they appeared to be.
 
 3. **The "season totals unverified" label is now stale — but the fix is not "verified".**
    `src/pages/Stats.jsx:116` renders one blanket string keyed only on `source` (always

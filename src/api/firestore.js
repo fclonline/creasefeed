@@ -240,12 +240,17 @@ export async function fetchAllPolls(gender, division = '1') {
 // Normalize the NCAA position code for display. The feed is inconsistent —
 // 'a', 'A', 'm', 'gk', 'g', 'Goalkeeper', '*' and '' all appear — so map the
 // known codes and fall back to a dash rather than surfacing raw junk.
+// The feed uses two vocabularies for the same thing, sometimes within one team's
+// season: single letters ('a'/'A', 'm', 'd') and full words ('Attacker',
+// 'Midfielder', 'Defender', 'Goalkeeper'). The full words were missing here, so
+// 187 of 373 non-blank values in a two-team sample still rendered as '—'.
+// '*' is the feed's own placeholder and correctly falls through to '—'.
 const POS_MAP = {
-  a: 'ATT', att: 'ATT', attack: 'ATT',
-  m: 'MID', mid: 'MID', midfield: 'MID', mf: 'MID',
-  d: 'DEF', def: 'DEF', defense: 'DEF',
+  a: 'ATT', att: 'ATT', attack: 'ATT', attacker: 'ATT',
+  m: 'MID', mid: 'MID', midfield: 'MID', mf: 'MID', midfielder: 'MID',
+  d: 'DEF', def: 'DEF', defense: 'DEF', defender: 'DEF',
   g: 'GK', gk: 'GK', goalie: 'GK', goalkeeper: 'GK',
-  fo: 'FO', faceoff: 'FO', lsm: 'LSM',
+  fo: 'FO', faceoff: 'FO', lsm: 'LSM', ssdm: 'SSDM',
 }
 function normPos(raw) {
   const key = String(raw || '').trim().toLowerCase()

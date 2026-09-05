@@ -20,7 +20,7 @@ import fetch from 'node-fetch'
 import { FieldValue } from 'firebase-admin/firestore'
 import { db } from '../firebase.js'
 import { seasonForGameDate, currentSeason, activeSeasons } from '../season.js'
-import { contributed } from '../statFields.js'
+import { contributed, hasPosition } from '../statFields.js'
 const BOXSCORE_API_BASE = 'https://ncaa-api.henrygd.me/game'
 const CONCURRENCY = 3            // public API rate limit is 5/sec; stay under
 const REQUEST_DELAY_MS = 250     // per-worker throttle
@@ -302,7 +302,9 @@ async function aggregateSeasonStats(players, gameContext, teamMap) {
       lastName:  p.lastName,
       name:      p.name,
       number:    p.number,
-      position:  p.position,
+      // Omitted when blank so the merge leaves any position we already know
+      // intact -- see hasPosition() in statFields.js.
+      ...(hasPosition(p.position) ? { position: p.position } : {}),
       teamId:    p.teamId,
       teamName:  p.teamName,
       teamSeo:   p.teamSeo,
