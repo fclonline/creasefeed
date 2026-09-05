@@ -112,6 +112,34 @@ more dangerous than nothing: an empty state is honest, an 11-save season line lo
 - Carried over: team-defense stat; D2/D3 no-record split; IAM `roles/functions.admin`;
   fall ball absent from the NCAA API; ⭐ the streamlined multi-level player-stats source.
 
+### Queued todos (Deemer, 2026-09-05)
+
+1. **Add January games to the schedule viewer.** The 31 January games backfilled today are
+   in Firestore but **unreachable in the UI** — `src/pages/Schedule.jsx` hardcodes a
+   Feb-start season in three places:
+   - `buildSeasonDates()` (line 14) builds the date strip `for (let m = 1; m <= 4; m++)`
+     — Feb 1 to May 31, so January dates do not exist to select.
+   - `seasonMonths` (line 126) is `[1, 2, 3, 4]`, so there is no January tab.
+   - `SEASON_YEAR = 2026` (line 7) is hardcoded.
+
+   This is **the same "the season starts in February" assumption that caused the data gap**,
+   now as a fourth layer in the frontend. Fixing only `seasonMonths` is not enough — the tab
+   would render but `jumpToMonth` searches `ALL_DATES`, which has no January entries.
+   While in here: `SEASON_YEAR` should come from `/config/site`, which `aggregateRecords`
+   already publishes, or the Schedule page will still read 2026 after the rollover even
+   though the rest of the pipeline is now season-aware.
+
+2. **Positions are missing for many players on the Stats boards.** Not a mapping bug —
+   `POS_MAP`/`normPos` (`src/api/firestore.js:243`) handle every code the feed sends, and
+   `'—'` is the correct render for an empty value. **The source omits the field**: of the
+   men's D1 top 40 by goals, `position` is `''` on **25 of 40 (62%)**, `'a'` on 13, `'m'`
+   on 2. Luke McNamara, the national leader, has no position.
+
+   So this needs a **roster source**, not a frontend change — the same shape of problem as
+   the goalie gap, and another input to the streamlined-source question. Interim option is
+   to hide the POS column when most rows are blank rather than print a column of dashes.
+
+
 ---
 
 ## 2026-09-01
