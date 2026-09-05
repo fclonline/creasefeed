@@ -45,6 +45,48 @@ the aggregation race this pipeline has a history of. All six previously off-by-o
 Jacksonville players now sit at their correct game counts (Utah's roster max gp = 14, with
 11 players there).
 
+**Women's leaderboards validated against ncaa.com — and a source ceiling found.**
+
+Every live women's board now has an external validation status. Boards are Goals,
+Assists, Goalkeepers, Draw Controls (`TABS` in `src/pages/Stats.jsx`).
+
+- **Goals — 10 of 10 exact.** The entire published D1 top ten matches to two decimals.
+  **Chloe Humphrey is the headline**: she was the inflation poster child at 31 stored gp
+  vs 21 distinct (1.48x), and now reads exactly 109g / 21gp = 5.19, ncaa.com's #1. The
+  rebuild is confirmed correct at the top of the national board.
+- **Assists — 9 of 11 exact.** Two players sit exactly one assist low with games played
+  correct: Alexa Spallina (Clemson) 71 vs 72, Chloe Humphrey (UNC) 49 vs 50.
+- **Draw controls** — validated 2026-09-01, 4 of 5 exact.
+
+**The two assist gaps are not our bug.** Re-summed both players from the NCAA box-score
+API game by game: Spallina totals **71 over 21 games**, Humphrey **49 assists / 109
+goals over 21 games** — matching our stored aggregates exactly, digit for digit. So the
+**NCAA box-score API and the NCAA stats leaderboard disagree with each other** by one
+assist on these players. Humphrey's goals match at 109 while her assists do not, so it
+is assist-specific — most likely a post-game stat correction that lands in the official
+season database and never propagates back to the box score endpoint.
+
+This is the same class as Racheli Levy-Smith on 2026-09-01, and it establishes an
+**accuracy ceiling imposed by the source**: aggregating box scores perfectly still does
+not reproduce the official leaderboard. Directly relevant to the source question below —
+"more streamlined and efficient" also has to mean "reconcilable with the official record".
+
+**Goalkeeper board: withholding confirmed with hard evidence.** Checked the rosters of 7
+of ncaa.com's top-10 women's saves leaders, team-wide and casing-independent:
+
+| Team | Roster rows | Team-wide saves |
+|---|---|---|
+| Louisville, Gardner-Webb, Longwood, New Hampshire, Princeton, Manhattan | 23-28 each | **0** |
+| Maryland | 26 | 11 (JJ Suriano) |
+
+Six of seven have **zero saves across every player on the roster**. Maryland is the lone
+exception and is worse than empty: ncaa.com has Suriano at 10.32 saves/game (~227 for the
+season) and we hold **11**, with `goalieMinutes = 60` — sixty *seconds* for a whole
+season, which yields a GAA of 16 x 3600 / 60 = **960.00**. So the women's goalie feed is
+not uniformly absent, it is mostly absent with a trickle of wildly wrong values. That is
+more dangerous than nothing: an empty state is honest, an 11-save season line looks real.
+`WITHHELD.saves` short-circuits the query and renders the on-hold panel — verified correct.
+
 ### Parked / follow-ups
 - **Names are stored with the source's casing — `"Luke Mcnamara"`, lowercase `n`**, where
   ncaa.com writes `"Luke McNamara"`. Found while searching for him. Anything doing a
@@ -58,6 +100,15 @@ Jacksonville players now sit at their correct game counts (Utah's roster max gp 
   board was checked (2026-09-01, 4 of 5 exact). Goals/points/ground balls unverified.
 - **The Firebase CLI credential on this machine is expired** (`firebase login --reauth`).
   Secret Manager access is needed for any `triggerStatsInflationDiagnostic` task.
+- **ncaa.com is reachable but JS-rendered** — WebFetch returns a blank shell; use the
+  browser pane. Stat URLs come from the page's own `<select>`:
+  `/stats/lacrosse-{men,women}/d1/current/individual/{id}` (W assists/game = 241,
+  goals/game = 240). The per-stat pages give raw GAMES and totals, not just per-game —
+  a much stronger reference than the summary page.
+- **Two legacy Sidearm docs carry `season: 2026` with a `gameDate` in 2001**
+  (`w-virginia-18871`, `w-stanford-27462`, both Clemson, both `final`). Inert for stats
+  since aggregation is `ncaa-` only, but any season-scoped query that does not also
+  filter the id prefix will pick them up.
 - Carried over: team-defense stat; D2/D3 no-record split; IAM `roles/functions.admin`;
   fall ball absent from the NCAA API; ⭐ the streamlined multi-level player-stats source.
 
