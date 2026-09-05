@@ -114,8 +114,7 @@ more dangerous than nothing: an empty state is honest, an 11-save season line lo
 
 ### Queued todos (Deemer, 2026-09-05)
 
-1. ~~**Add January games to the schedule viewer.**~~ **DONE 2026-09-05 — committed, NOT
-   yet deployed.** `src/pages/Schedule.jsx` had the Feb-start assumption in three places:
+1. ~~**Add January games to the schedule viewer.**~~ **DONE & DEPLOYED 2026-09-05.** `src/pages/Schedule.jsx` had the Feb-start assumption in three places:
    `buildSeasonDates()` built the date strip `for (let m = 1; m <= 4; m++)`, `seasonMonths`
    was `[1,2,3,4]`, and `SEASON_YEAR` was a hardcoded `2026`. A fourth layer of the same
    assumption that cost us the games themselves.
@@ -126,7 +125,8 @@ more dangerous than nothing: an empty state is honest, an 11-save season line lo
    else Feb 1) on purpose: opening on Jan 1 would show four empty weeks before the first
    game, and January is one tab away.
 
-   Verified against live data in the dev server, no console errors:
+   Verified on production (creasefeed.web.app) after deploy, and in dev before it —
+   no console errors:
 
    | Date | View | Renders |
    |---|---|---|
