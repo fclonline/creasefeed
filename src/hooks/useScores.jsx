@@ -5,7 +5,7 @@
 // ============================================================================
 import { useState, useEffect, useRef } from 'react'
 import { subscribeToScoreboard, fetchStandings, fetchStatLeaders, fetchAllPolls } from '../api/firestore.js'
-import { STANDINGS_M, STANDINGS_W, STATS_M, STATS_W } from '../data/mockData.js'
+import { STATS_M, STATS_W } from '../data/mockData.js'
 // ── useScores — real-time Firestore only ─────────────────────────────────────
 // date is YYYYMMDD (e.g. "20260524"); division is "1"/"2"/"3". Both are passed
 // through to the Firestore query so the scoreboard is scoped to the selected
@@ -46,31 +46,28 @@ export function useScores(gender, date, division) {
   return { games, loading, error, source }
 }
 // ── useStandings ──────────────────────────────────────────────────────────────
-export function useStandings(gender) {
-  const [standings, setStandings] = useState([])
+// No mock fallback: an empty poll shows the empty state, never sample data.
+export function useStandings(gender, division = '1') {
+  const [standings, setStandings] = useState({ rows: [], source: '', weekLabel: '' })
   const [loading,   setLoading]   = useState(true)
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
     ;(async () => {
       try {
-        const data = await fetchStandings(gender)
-        if (!cancelled) {
-          setStandings(data && data.length > 0
-            ? data
-            : (gender === 'W' ? STANDINGS_W : STANDINGS_M))
-        }
+        const data = await fetchStandings(gender, division)
+        if (!cancelled) setStandings(data || { rows: [], source: '', weekLabel: '' })
       } catch {
-        if (!cancelled) {
-          setStandings(gender === 'W' ? STANDINGS_W : STANDINGS_M)
-        }
+        if (!cancelled) setStandings({ rows: [], source: '', weekLabel: '' })
       } finally {
         if (!cancelled) setLoading(false)
       }
     })()
     return () => { cancelled = true }
-  }, [gender])
-  return { standings, loading }
+  }, [gender, division])
+  return { standings: standings.rows, source: standings.source, weekLabel: standings.weekLabel, loading }
 }
+
 // ── useStatLeaders ────────────────────────────────────────────────────────────
 // Mock-data fallback is gated to DEV only. In prod, an empty Firestore result
 // or a thrown query (e.g. a missing composite index during a build window)

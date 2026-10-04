@@ -8,6 +8,35 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 
 ---
 
+## 2026-10-03
+
+### Polls audit — committed, NOT yet deployed
+
+**Inside Lacrosse paused.** Every insidelacrosse.com path returns a Cloudflare bot challenge
+(403) and robots.txt disallows all non-search-engine crawlers. Scraping is off the table; the
+route is a data license or permission from IL. All IL references (the "KANE Media Poll" tabs,
+the `inside-lacrosse-*` fallbacks, mock entries) are removed from the site.
+
+**What was wrong with the polls we do carry** (checked against usila.org / usalacrosse.com):
+
+| Problem | Cause | Fix |
+|---|---|---|
+| USILA showed **Week 12 (Apr 27)**, not the Final (Jun 5) | URL guessed from a hardcoded date list ending in late April | Find articles via Sidearm stories JSON feed (newest first) |
+| USILA D2/D3 missing tied teams (18 and 19 of 20) | Dedupe keyed on rank only | Key on rank + team |
+| USA Lacrosse polls had **3 teams each**, stale since Sept 10 | Landing page only previewed the top 3, then was redesigned | Parse each poll's own `/rankings/<poll>-top-20` page |
+| USA Lacrosse polls (all 6) and USILA D2/D3 never shown | Frontend only read `imlca`, `iwlca`, `inside-lacrosse-*` | `pollIdsFor(gender, div)` shared by tabs and data layer |
+| Women's coaches tab always empty | `iwlca` is never written (site can't be scraped) | Tab removed; women get USA Lacrosse + RPI |
+| Scores sidebar titled **"AP Top 20"**, always D1, **mock standings for women in prod** | Hardcoded title; mock fallback in `useStandings` | Real source label, division-aware, mock fallback removed |
+| "Updated <date>" was our scrape time | `fetchedAt` shown | Show the poll's own week + release date (`weekLabel`, `pollDate`) |
+
+Parsers verified against the live sites: all 9 polls resolve to the **Final**, 20 teams each.
+RPI only exists for D1; the RPI tab says so on D2/D3.
+
+**To ship:** deploy functions (polls scraper) + hosting, then run `triggerPolls` once so the
+Final polls land before the nightly job.
+
+---
+
 ## 2026-09-05
 
 ### Shipped to production (data only — no code change)

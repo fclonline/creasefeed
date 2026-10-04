@@ -59,7 +59,7 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
     : undefined
 
   const { games, loading, error, source } = useScores(gender, dateParam, division)
-  const { standings } = useStandings(gender)
+  const { standings, source: pollSource, weekLabel: pollWeek } = useStandings(gender, division)
 
   const confs    = isW ? CONFERENCES_W : CONFERENCES_M
   const filtered = games.filter(g => activeConf === 'All' || g.conf === activeConf)
@@ -129,23 +129,25 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
         <div className="sidebar">
           <div className="widget">
             <div className="widget-hd">
-              <span className="widget-title">AP Top 20</span>
-              <span className="widget-sub">{gender==='M'?"Men's":"Women's"} · D{division}</span>
+              <span className="widget-title">{pollSource ? pollSource.replace(/ Magazine$/, '') : 'Top 20'}</span>
+              <span className="widget-sub">{gender==='M'?"Men's":"Women's"} · D{division}{pollWeek ? ` · ${pollWeek}` : ''}</span>
             </div>
             {standings.length === 0 ? (
-              <div style={{padding:'20px 14px',fontFamily:"'Barlow'",fontSize:12,color:'var(--red)',textAlign:'center'}}>
-                NO DATA — polls/standings not yet scraped
+              <div style={{padding:'20px 14px',fontFamily:"'Barlow'",fontSize:12,color:'var(--muted)',textAlign:'center'}}>
+                No poll available for this division yet.
               </div>
             ) : (
               <table className="std-table">
-                <thead><tr><th>Team</th><th>W</th><th>L</th><th>Streak</th></tr></thead>
+                <thead><tr><th>Team</th><th>W</th><th>L</th><th>Move</th></tr></thead>
                 <tbody>
                   {standings.map(s=>(
-                    <tr key={s.rank}>
+                    <tr key={`${s.rank}-${s.team}`}>
                       <td><span className="std-rank">{s.rank}</span>{s.team}</td>
                       <td style={{color:'var(--text)'}}>{s.w}</td>
                       <td>{s.l}</td>
-                      <td style={{color:s.streak?.startsWith?.('W')?ac(isW):'var(--red)'}}>{s.streak}</td>
+                      <td style={{color:s.movement>0?ac(isW):s.movement<0?'var(--red)':'var(--muted)'}}>
+                        {s.movement>0?`▲${s.movement}`:s.movement<0?`▼${Math.abs(s.movement)}`:'—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

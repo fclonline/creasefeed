@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react'
 import { usePolls } from '../hooks/useScores.jsx'
 import { chip, ac } from '../components/shared.jsx'
+import { pollIdsFor } from '../api/firestore.js'
 
-const POLL_TABS_M = [
-  { key: 'imlca',            label: 'USILA Coaches' },
-  { key: 'inside-lacrosse-m', label: 'KANE Media Poll' },
-  { key: 'rpi',              label: 'NCAA RPI' },
-]
-const POLL_TABS_W = [
-  { key: 'iwlca',            label: 'IWLCA Coaches' },
-  { key: 'inside-lacrosse-w', label: 'KANE Media Poll' },
-  { key: 'rpi',              label: 'NCAA RPI' },
-]
+// Tabs are built per gender + division from the same ID map the data layer uses,
+// so a tab can never point at a poll the scrapers don't write.
+const POLL_LABELS = { usila: 'USILA Coaches', usal: 'USA Lacrosse' }
+
+function pollTabs(gender, division) {
+  const tabs = pollIdsFor(gender, division).map(key => ({
+    key,
+    label: key.startsWith('usal') ? POLL_LABELS.usal : POLL_LABELS.usila,
+  }))
+  return [...tabs, { key: 'rpi', label: 'NCAA RPI' }]
+}
+
+function formatPollDate(iso) {
+  const d = new Date(`${iso}T12:00:00`)
+  return isNaN(d) ? iso : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
 
 function MovementCell({ movement }) {
   if (!movement || movement === 0) return <span className="poll-move poll-move-none">—</span>
@@ -20,18 +27,17 @@ function MovementCell({ movement }) {
 }
 
 export default function PollsPage({ gender, division, isW }) {
-  const tabs = gender === 'M' ? POLL_TABS_M : POLL_TABS_W
-  const defaultTab = gender === 'M' ? 'imlca' : 'iwlca'
-  const [activeTab, setActiveTab] = useState(defaultTab)
-  const [rpiDiv, setRpiDiv] = useState(division || '1')
+  const div  = division || '1'
+  const tabs = pollTabs(gender, div)
+  const [activeTab, setActiveTab] = useState(tabs[0].key)
   const ac_ = chip(isW)
 
-  const { polls, loading } = usePolls(gender, rpiDiv)
+  const { polls, loading } = usePolls(gender, div)
 
-  // Reset tab when gender changes
+  // Reset tab when gender or division changes
   useEffect(() => {
-    setActiveTab(gender === 'M' ? 'imlca' : 'iwlca')
-  }, [gender])
+    setActiveTab(pollTabs(gender, div)[0].key)
+  }, [gender, div])
 
   const validKeys = tabs.map(t => t.key)
   const currentTab = validKeys.includes(activeTab) ? activeTab : tabs[0].key
@@ -39,7 +45,7 @@ export default function PollsPage({ gender, division, isW }) {
   // Get poll data for active tab
   let entries = []
   let pollName = ''
-  let updatedAt = null
+  let asOf = null
   const isRPI = currentTab === 'rpi'
 
   if (!loading && polls) {
@@ -47,22 +53,22 @@ export default function PollsPage({ gender, division, isW }) {
       const rpi = polls.rpi
       if (rpi) {
         entries = rpi.entries || []
-        pollName = `NCAA RPI — D${rpiDiv}`
-        updatedAt = rpi.updatedAt || rpi.fetchedAt
+        pollName = `NCAA RPI — D${div}`
+        if (rpi.fetchedAt) asOf = `Updated ${new Date(rpi.fetchedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
       }
     } else {
       const match = (polls.coachesPolls || []).find(p => p.pollId === currentTab)
       if (match) {
         entries = match.entries || []
         pollName = match.source || match.pollId
-        updatedAt = match.fetchedAt
+        // Show the poll's own week and release date, not when we scraped it.
+        asOf = [match.weekLabel, match.pollDate && formatPollDate(match.pollDate)].filter(Boolean).join(' · ') || null
       }
     }
   }
 
-  const formattedDate = updatedAt
-    ? (typeof updatedAt === 'string' ? updatedAt : new Date(updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
-    : null
+  const showRecord = isRPI || entries.some(e => e.record)
+  const showPoints = !isRPI && entries.some(e => e.points)
 
   return (
     <div className="polls-page">
@@ -78,24 +84,14 @@ export default function PollsPage({ gender, division, isW }) {
           </button>
         ))}
         <div style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed'", fontSize: 11, color: 'var(--muted)', letterSpacing: '1px' }}>
-          {gender === 'M' ? "Men's" : "Women's"} · D{division} · 2026 Season
+          {gender === 'M' ? "Men's" : "Women's"} · D{div} · 2026 Season
         </div>
       </div>
-
-      {/* RPI division toggle */}
-      {isRPI && (
-        <div className="filter-row" style={{ paddingTop: 8 }}>
-          <span className="filter-label">Division</span>
-          {['1', '2', '3'].map(d => (
-            <button key={d} className={`filter-chip ${rpiDiv === d ? ac_ : ''}`} onClick={() => setRpiDiv(d)}>D{d}</button>
-          ))}
-        </div>
-      )}
 
       {/* poll header */}
       <div className="polls-header">
         <div className="polls-title">{pollName || tabs.find(t => t.key === currentTab)?.label || 'Rankings'}</div>
-        {formattedDate && <div className="polls-updated">Updated {formattedDate}</div>}
+        {asOf && <div className="polls-updated">{asOf}</div>}
       </div>
 
       {/* loading */}
@@ -110,7 +106,9 @@ export default function PollsPage({ gender, division, isW }) {
         <div className="polls-empty">
           <div className="polls-empty-title">NO POLL DATA</div>
           <div className="polls-empty-sub">
-            This poll hasn't been scraped yet. The <code>scrapePollsJob</code> Cloud Function runs Tuesdays at 10am ET.
+            {isRPI && div !== '1'
+              ? 'NCAA RPI is currently available for Division I only.'
+              : 'This poll isn\'t available yet. Polls refresh nightly once they\'re published.'}
           </div>
         </div>
       )}
@@ -124,19 +122,21 @@ export default function PollsPage({ gender, division, isW }) {
                 <th>Rank</th>
                 <th>Move</th>
                 <th>Team</th>
-                <th>{isRPI ? 'Conference' : 'Record'}</th>
-                {!isRPI && <th>Points</th>}
+                {isRPI && <th>Conference</th>}
+                {showRecord && <th>Record</th>}
+                {showPoints && <th>Points</th>}
                 <th>Prev</th>
               </tr>
             </thead>
             <tbody>
               {entries.slice(0, 25).map((e, i) => (
-                <tr key={i}>
+                <tr key={`${e.rank}-${e.team}`}>
                   <td><span className="polls-rank">{e.rank || i + 1}</span></td>
                   <td><MovementCell movement={e.movement} /></td>
                   <td><span className="polls-team">{e.team}</span></td>
-                  <td><span className="polls-record">{isRPI ? (e.conf || '—') : (e.record || '—')}</span></td>
-                  {!isRPI && <td><span className="polls-points">{e.points || '—'}</span></td>}
+                  {isRPI && <td><span className="polls-record">{e.conf || '—'}</span></td>}
+                  {showRecord && <td><span className="polls-record">{e.record || '—'}</span></td>}
+                  {showPoints && <td><span className="polls-points">{e.points || '—'}{e.firstPlaceVotes ? ` (${e.firstPlaceVotes})` : ''}</span></td>}
                   <td><span className="polls-prev">{e.prevRank || '—'}</span></td>
                 </tr>
               ))}

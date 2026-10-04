@@ -161,30 +161,39 @@ export async function fetchTeamRecords(gender) {
   }
 }
 
-// ── Fetch standings from polls collection ────────────────────────────────────
-export async function fetchStandings(gender) {
+// ── Poll IDs per gender + division ───────────────────────────────────────────
+// These must match what functions/src/scrapers/polls.js writes. USILA covers
+// men only (its D1 doc keeps the legacy `imlca` id); USA Lacrosse Magazine
+// covers both genders. There is no automated women's coaches poll (IWLCA's site
+// can't be scraped) and Inside Lacrosse is not carried.
+export function pollIdsFor(gender, division = '1') {
+  return gender === 'M'
+    ? [division === '1' ? 'imlca' : `usila-m-d${division}`, `usal-m-d${division}`]
+    : [`usal-w-d${division}`]
+}
+
+// ── Fetch the Scores sidebar poll ────────────────────────────────────────────
+// Prefers USA Lacrosse because it carries W-L records; falls back to USILA.
+export async function fetchStandings(gender, division = '1') {
   try {
-    // Use IMLCA for men's, IWLCA for women's as primary coaches poll
-    const pollId   = gender === 'M' ? 'imlca' : 'iwlca'
-    const fallback = gender === 'M' ? 'inside-lacrosse-m' : 'inside-lacrosse-w'
-
-    let snap = await getDoc(doc(db, 'polls', pollId))
-    if (!snap.exists()) {
-      snap = await getDoc(doc(db, 'polls', fallback))
+    const ids = [...pollIdsFor(gender, division)].reverse()
+    for (const id of ids) {
+      const snap = await getDoc(doc(db, 'polls', id))
+      if (!snap.exists() || !(snap.data().entries || []).length) continue
+      const data = snap.data()
+      return {
+        source:    data.source || '',
+        weekLabel: data.weekLabel || '',
+        rows: data.entries.map(e => ({
+          rank:     e.rank,
+          team:     e.team,
+          w:        e.record ? e.record.split('-')[0].trim() : '—',
+          l:        e.record ? e.record.split('-')[1]?.trim() || '—' : '—',
+          movement: e.movement || 0,
+        })),
+      }
     }
-    if (!snap.exists()) return null
-
-    const data = snap.data()
-    return (data.entries || []).map(e => ({
-      rank:   e.rank,
-      team:   e.team,
-      w:      e.record?.split('-')[0] || '—',
-      l:      e.record?.split('-')[1] || '—',
-      conf:   e.record || '—',
-      streak: e.movement > 0 ? `▲${e.movement}` : e.movement < 0 ? `▼${Math.abs(e.movement)}` : '—',
-      points: e.points || '',
-      _source: 'firestore-poll',
-    }))
+    return null
   } catch (err) {
     console.warn('[CreaseFeed] Firestore fetchStandings failed:', err.message)
     return null
@@ -213,13 +222,9 @@ export async function fetchRPI(gender, division = '1') {
 // ── Fetch all polls for Rankings page ────────────────────────────────────────
 export async function fetchAllPolls(gender, division = '1') {
   try {
-    const pollIds = gender === 'M'
-      ? ['imlca', 'inside-lacrosse-m']
-      : ['iwlca', 'inside-lacrosse-w']
-
     const [polls, rpi] = await Promise.all([
       Promise.all(
-        pollIds.map(async (id) => {
+        pollIdsFor(gender, division).map(async (id) => {
           const snap = await getDoc(doc(db, 'polls', id))
           return snap.exists() ? { pollId: id, ...snap.data() } : null
         })

@@ -235,7 +235,6 @@ function makeEntries(standings) {
 export const MOCK_POLLS_M = {
   coachesPolls: [
     { pollId: 'imlca',            source: 'USILA Coaches Poll (sample)',  entries: makeEntries(STANDINGS_M), fetchedAt: Date.now() },
-    { pollId: 'inside-lacrosse-m', source: 'KANE Media Poll (sample)',    entries: makeEntries(STANDINGS_M), fetchedAt: Date.now() },
   ],
   rpi: {
     entries: makeEntries(STANDINGS_M).map((e, i) => ({ ...e, conf: 'ACC', rank: i + 1 })),
@@ -247,7 +246,6 @@ export const MOCK_POLLS_M = {
 export const MOCK_POLLS_W = {
   coachesPolls: [
     { pollId: 'iwlca',            source: 'IWLCA Coaches Poll (sample)', entries: makeEntries(STANDINGS_W), fetchedAt: Date.now() },
-    { pollId: 'inside-lacrosse-w', source: 'KANE Media Poll (sample)',   entries: makeEntries(STANDINGS_W), fetchedAt: Date.now() },
   ],
   rpi: {
     entries: makeEntries(STANDINGS_W).map((e, i) => ({ ...e, conf: 'ACC', rank: i + 1 })),

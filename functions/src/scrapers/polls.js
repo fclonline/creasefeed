@@ -1,11 +1,12 @@
 // ============================================================================
-// functions/src/scrapers/polls.js  (v4 — corrected parsers)
+// functions/src/scrapers/polls.js  (v5 — feed-driven USILA, per-poll USAL pages)
 //
 // Sources:
 //   USILA (Men's D1/D2/D3): usila.org news articles — Sidearm CMS
 //                            Columns are (Team, Rank, Points), not (Rank, Team)
-//   USA Lacrosse Magazine:  usalacrosse.com/magazine/rankings
-//                            All 6 college sections (M/W × D1/D2/D3) in one page
+//                            Located via the Sidearm stories JSON feed
+//   USA Lacrosse Magazine:  usalacrosse.com/magazine/rankings/<poll>-top-20
+//                            One page per college poll (M/W × D1/D2/D3)
 //   IWLCA:                  Their iMIS site is not server-renderable.
 //                            Women's college coverage comes via USA Lacrosse.
 //   NCAA RPI:               ncaa.com/rankings (server-side)
@@ -88,19 +89,29 @@ function getWeekNumber(date) {
   return Math.ceil((((d - yearStart) / 86400000) + 1) / 7)
 }
 
-async function savePoll(pollId, gender, source, entries, division = '1') {
+// `meta` carries what the source itself says about the poll: weekLabel ("Week 13",
+// "Final"), pollDate (its release date) and sourceUrl. History is keyed by the
+// week label when there is one, so the nightly re-scrape of an unchanged poll
+// overwrites one snapshot instead of minting a new one every calendar week.
+async function savePoll(pollId, gender, source, entries, division = '1', meta = {}) {
   if (!entries?.length) { console.warn(`[polls] ${pollId} — 0 entries, skipping`); return }
   const now     = new Date()
-  const weekKey = `${now.getFullYear()}-W${getWeekNumber(now)}`
-  const data    = { pollId, gender, division, source, entries, weekKey, publishedAt: now.toISOString(), fetchedAt: Date.now() }
+  const { weekLabel = null, pollDate = null, sourceUrl = null } = meta
+  const weekKey = weekLabel
+    ? `${SEASON}-${weekLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+    : `${now.getFullYear()}-W${getWeekNumber(now)}`
+  const data    = {
+    pollId, gender, division, source, entries, weekKey, weekLabel, pollDate, sourceUrl,
+    publishedAt: now.toISOString(), fetchedAt: Date.now(),
+  }
   await db.collection('polls').doc(pollId).set(data)
   await db.collection('polls').doc(pollId).collection('history').doc(weekKey).set(data)
-  console.log(`[polls] ✓ ${pollId} — ${entries.length} teams`)
+  console.log(`[polls] ✓ ${pollId} — ${entries.length} teams (${weekLabel || weekKey})`)
 }
 
 // ── USILA: Sidearm CMS articles ──────────────────────────────────────────────
-// Table column order (verified 2026 wk11): [Team(+logo+FPV), Rank, Points]
-function parseUSILAArticleTable(html) {
+// Table column order (verified 2026 wk11 + Final): [Team(+logo+FPV), Rank, Points]
+export function parseUSILAArticleTable(html) {
   const $       = cheerio.load(html)
   const entries = []
 
@@ -130,128 +141,103 @@ function parseUSILAArticleTable(html) {
     entries.push(makeEntry(rank, teamText, '', points, '', firstPlaceVotes))
   })
 
-  // Dedupe by rank (in case of multiple tables on the page) and sort
+  // Dedupe (in case of multiple tables on the page) and sort. Key on team as well
+  // as rank: tied teams share a rank, and a rank-only key dropped them.
   const seen = new Map()
-  for (const e of entries) if (!seen.has(e.rank)) seen.set(e.rank, e)
+  for (const e of entries) {
+    const key = `${e.rank}|${e.team}`
+    if (!seen.has(key)) seen.set(key, e)
+  }
   return [...seen.values()].sort((a, b) => a.rank - b.rank)
 }
 
-async function findUSILAUrl(division) {
-  const divSlug = division === '1' ? 'division-i' : division === '2' ? 'division-ii' : 'division-iii'
+// The Sidearm stories feed lists articles newest first, so the first headline
+// matching a division is its latest poll. This replaced guessing article URLs
+// from a hardcoded list of dates, which ended in late April and so never found
+// Week 13 or the Final.
+const USILA_STORIES_URL = 'https://usila.org/services/adaptive_components.ashx?type=stories&count=200&start=0&sport_id=0'
+const ROMAN = { '1': 'I', '2': 'II', '3': 'III' }
 
-  // Mon/Tue dates this season, most recent first
-  const dates = [
-    '4/27','4/28','4/21','4/20','4/14','4/13','4/7','4/8',
-    '3/31','4/1','3/23','3/24','3/16','3/17',
-    '3/9','3/10','3/2','3/3','2/23','2/24',
-    '2/17','2/18','2/9','2/10','2/2','2/3','1/27','1/28',
-  ]
-
-  for (let week = 14; week >= 0; week--) {
-    const weekSlug = week === 0 ? 'preseason' : `week-${week}`
-    for (const d of dates) {
-      const [m, day] = d.split('/')
-      const url = `https://usila.org/news/${SEASON}/${m}/${day}/mens-lacrosse-usila-${SEASON}-mens-coaches-${divSlug}-poll-${weekSlug}.aspx`
-      try {
-        const res = await fetch(url, {
-          method: 'HEAD',
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-          redirect: 'follow',
-          signal: AbortSignal.timeout(5000),
-        })
-        if (res.ok) { console.log(`[polls] USILA D${division} → ${url}`); return url }
-      } catch {}
-    }
+export function findUSILAStory(stories, division) {
+  const re = new RegExp(`Men.s Coaches Division ${ROMAN[division]} Poll\\s*-\\s*(.+?)\\s*$`, 'i')
+  for (const s of stories) {
+    const m = (s.headline || '').match(re)
+    if (m && s.story_path) return { path: s.story_path, weekLabel: m[1].trim(), date: s.date }
   }
   return null
 }
 
-async function scrapeUSILA(division) {
+async function scrapeUSILA(division, stories) {
   console.log(`[polls] USILA Men's D${division}...`)
   try {
-    const url = await findUSILAUrl(division)
-    if (!url) { console.warn(`[polls] USILA D${division}: no article found`); return [] }
+    const story = findUSILAStory(stories, division)
+    if (!story) { console.warn(`[polls] USILA D${division}: no poll story in feed`); return null }
+    const url     = `https://usila.org${story.path}`
     const html    = await fetchHtml(url)
     const entries = parseUSILAArticleTable(html)
-    console.log(`[polls] USILA D${division}: ${entries.length} teams`)
-    return entries
+    console.log(`[polls] USILA D${division} (${story.weekLabel}) → ${url}: ${entries.length} teams`)
+    return { entries, weekLabel: story.weekLabel, pollDate: story.date?.slice(0, 10) || null, sourceUrl: url }
   } catch (err) {
     console.error(`[polls] USILA D${division} error: ${err.message}`)
-    return []
+    return null
   }
 }
 
-// ── USA Lacrosse Magazine — section-aware card parser ────────────────────────
-// DOM (verified):
-//   .magazine-categorized-standings (heading <h2>College</h2>)
-//     .magazine-categorized-section  (heading <h3>Division I/II/III</h3>)
-//       .magazine-categorized-table
-//         .magazine-categorized-table__header (heading <h4>Men/Women</h4>)
-//         article.magazine-team--standings
-//           .magazine-team__ranking--current  > div  (rank)
-//           .magazine-team__ranking--previous > div  (prev rank)
-//           .magazine-team__title                    (team name)
-//           .magazine-team__record                   ("9 - 1")
+// ── USA Lacrosse Magazine — one page per poll ─────────────────────────────────
+// The /magazine/rankings landing page was redesigned (Sept 2026) and only ever
+// previewed each poll's top 3. Each poll's full list lives on its own page:
+//   <p><strong>Date:</strong> May 27, 2026 <strong>Week:</strong> Final</p>
+//   <table class="table"> header row (# | TEAM | W-L | PR), then one row per team,
+//   then an "Also considered" row followed by unranked teams (rank "—").
+const USAL_POLLS = [
+  { gender: 'M', div: '1', slug: 'division-i-men-top-20' },
+  { gender: 'M', div: '2', slug: 'division-ii-men-top-20' },
+  { gender: 'M', div: '3', slug: 'division-iii-men-top-20' },
+  { gender: 'W', div: '1', slug: 'division-i-women-top-20' },
+  { gender: 'W', div: '2', slug: 'division-ii-women-top-20' },
+  { gender: 'W', div: '3', slug: 'division-iii-women-top-20' },
+]
+
+export function parseUSALPollPage(html) {
+  const $       = cheerio.load(html)
+  const $table  = $('table.table').first()
+  const entries = []
+
+  $table.find('tr').each((_, row) => {
+    const tds = $(row).find('td')
+    if (tds.length < 4) return
+    const rank = parseInt(tds.eq(0).text().replace(/ /g, ' ').trim(), 10)
+    if (!rank || rank < 1 || rank > 30) return
+    const team = tds.eq(1).text().trim()
+    if (!team) return
+    entries.push(makeEntry(rank, team, tds.eq(2).text().trim(), '', tds.eq(3).text().trim()))
+  })
+
+  const meta     = $table.prevAll('p').first().text().replace(/ /g, ' ')
+  const dateStr  = meta.match(/Date:\s*([A-Za-z]+\.? \d{1,2},? \d{4})/)?.[1]
+  const parsed   = dateStr ? new Date(dateStr) : null
+  const pollDate = parsed && !isNaN(parsed) ? parsed.toISOString().slice(0, 10) : null
+  const weekLabel = meta.match(/Week:\s*(.+?)\s*$/m)?.[1]?.trim() || null
+
+  return { entries: entries.sort((a, b) => a.rank - b.rank), pollDate, weekLabel }
+}
+
 async function scrapeUSALacrosse() {
   console.log('[polls] USA Lacrosse Magazine...')
   const results = {}
 
-  try {
-    const html = await fetchHtml('https://www.usalacrosse.com/magazine/rankings')
-    const $    = cheerio.load(html)
-
-    $('.magazine-categorized-standings').each((_, container) => {
-      const $container = $(container)
-      const topHeading = $container.find('.magazine-categorized-standings__heading').first().text().trim()
-      // Only parse the College block (skip HS/Club/Pro if present)
-      if (!/college/i.test(topHeading)) return
-
-      $container.find('.magazine-categorized-section').each((_, section) => {
-        const $section = $(section)
-        const divText  = $section.children('h3').first().text().trim()
-        const division = /\biii\b/i.test(divText) ? '3'
-                       : /\bii\b/i.test(divText)  ? '2'
-                       : /\bi\b/i.test(divText)   ? '1'
-                       : null
-        if (!division) return
-
-        $section.find('.magazine-categorized-table').each((_, table) => {
-          const $table = $(table)
-          const genderText = $table.find('.magazine-categorized-table__header h4').first().text().trim()
-            || $table.find('h4').first().text().trim()
-          const gender = /women|girls/i.test(genderText) ? 'W'
-                       : /men|boys/i.test(genderText)    ? 'M'
-                       : null
-          if (!gender) return
-
-          const pollId  = `usal-${gender.toLowerCase()}-d${division}`
-          const entries = []
-
-          $table.find('article.magazine-team--standings').each((_, card) => {
-            const $card   = $(card)
-            const curStr  = $card.find('.magazine-team__ranking--current div').first().text().trim()
-            const prevStr = $card.find('.magazine-team__ranking--previous div').first().text().trim()
-            const team    = $card.find('.magazine-team__title').first().text().trim()
-            const record  = $card.find('.magazine-team__record').first().text().replace(/\s+/g, ' ').trim()
-            const rank    = parseInt(curStr, 10)
-
-            if (!rank || rank < 1 || rank > 30) return
-            if (!team) return
-
-            entries.push(makeEntry(rank, team, record, '', prevStr))
-          })
-
-          if (entries.length > 0) {
-            entries.sort((a, b) => a.rank - b.rank)
-            results[pollId] = { entries, gender, div: division }
-            console.log(`[polls] USAL ${pollId}: ${entries.length} teams`)
-          }
-        })
-      })
-    })
-  } catch (err) {
-    console.error('[polls] USA Lacrosse Magazine failed:', err.message)
-  }
+  await Promise.all(USAL_POLLS.map(async ({ gender, div, slug }) => {
+    const pollId = `usal-${gender.toLowerCase()}-d${div}`
+    const url    = `https://www.usalacrosse.com/magazine/rankings/${slug}`
+    try {
+      const parsed = parseUSALPollPage(await fetchHtml(url))
+      if (parsed.entries.length === 0) { console.warn(`[polls] USAL ${pollId}: 0 teams parsed`); return }
+      results[pollId] = { ...parsed, gender, div, sourceUrl: url }
+      console.log(`[polls] USAL ${pollId} (${parsed.weekLabel}, ${parsed.pollDate}): ${parsed.entries.length} teams`)
+    } catch (err) {
+      console.error(`[polls] USAL ${pollId} failed: ${err.message}`)
+    }
+  }))
 
   return results
 }
@@ -314,13 +300,20 @@ async function scrapeRPI(gender) {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 export async function scrapeAllPolls() {
-  console.log('[polls] Starting poll scrape (v4)...')
+  console.log('[polls] Starting poll scrape (v5)...')
   const results = {}
 
+  let stories = []
+  try {
+    stories = (await fetchJson(USILA_STORIES_URL))?.data || []
+  } catch (err) {
+    console.error(`[polls] USILA stories feed failed: ${err.message}`)
+  }
+
   const [u1, u2, u3, usal, rm, rw] = await Promise.allSettled([
-    scrapeUSILA('1'),
-    scrapeUSILA('2'),
-    scrapeUSILA('3'),
+    scrapeUSILA('1', stories),
+    scrapeUSILA('2', stories),
+    scrapeUSILA('3', stories),
     scrapeUSALacrosse(),
     scrapeRPI('M'),
     scrapeRPI('W'),
@@ -330,21 +323,16 @@ export async function scrapeAllPolls() {
   // Women's college coverage comes from USA Lacrosse Magazine instead.
   console.log('[polls] IWLCA: skipped (iMIS site not server-renderable; using USAL for women)')
 
-  if (u1.status === 'fulfilled' && u1.value?.length) {
-    await savePoll('imlca',      'M', 'USILA Coaches Poll', u1.value, '1')
-    results.usila_d1 = u1.value.length
-  }
-  if (u2.status === 'fulfilled' && u2.value?.length) {
-    await savePoll('usila-m-d2', 'M', 'USILA Coaches Poll', u2.value, '2')
-    results.usila_d2 = u2.value.length
-  }
-  if (u3.status === 'fulfilled' && u3.value?.length) {
-    await savePoll('usila-m-d3', 'M', 'USILA Coaches Poll', u3.value, '3')
-    results.usila_d3 = u3.value.length
+  const usila = [['imlca', '1', u1], ['usila-m-d2', '2', u2], ['usila-m-d3', '3', u3]]
+  for (const [pollId, div, r] of usila) {
+    if (r.status === 'fulfilled' && r.value?.entries?.length) {
+      await savePoll(pollId, 'M', 'USILA Coaches Poll', r.value.entries, div, r.value)
+      results[`usila_d${div}`] = r.value.entries.length
+    }
   }
   if (usal.status === 'fulfilled') {
     for (const [pid, d] of Object.entries(usal.value || {})) {
-      await savePoll(pid, d.gender, 'USA Lacrosse Magazine', d.entries, d.div)
+      await savePoll(pid, d.gender, 'USA Lacrosse Magazine', d.entries, d.div, d)
       results[pid] = d.entries.length
     }
   }
