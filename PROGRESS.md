@@ -10,7 +10,7 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 
 ## 2026-10-03
 
-### Polls audit — committed, NOT yet deployed
+### Polls audit — DEPLOYED 2026-10-05
 
 **Inside Lacrosse paused.** Every insidelacrosse.com path returns a Cloudflare bot challenge
 (403) and robots.txt disallows all non-search-engine crawlers. Scraping is off the table; the
@@ -32,8 +32,11 @@ the `inside-lacrosse-*` fallbacks, mock entries) are removed from the site.
 Parsers verified against the live sites: all 9 polls resolve to the **Final**, 20 teams each.
 RPI only exists for D1; the RPI tab says so on D2/D3.
 
-**To ship:** deploy functions (polls scraper) + hosting, then run `triggerPolls` once so the
-Final polls land before the nightly job.
+**Shipped 2026-10-05:** deployed `scrapePollsJob`, `scrapeNightly`, `triggerPolls` + hosting, then
+ran `triggerPolls`. Firestore: all 9 polls `weekLabel: Final`, 20 teams each. Live site confirmed
+(USILA D1 Final, Princeton #1, Jun 5). Deploy gotchas: `--only functions:X,hosting` in one command
+fails with a hosting-target assertion, so deploy them separately; transient ECONNRESET errors
+from Google APIs clear on retry.
 
 ---
 
