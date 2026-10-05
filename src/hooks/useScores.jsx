@@ -4,7 +4,7 @@
 // FALLBACK: Empty state — never show ESPN or mock data
 // ============================================================================
 import { useState, useEffect, useRef } from 'react'
-import { subscribeToScoreboard, fetchStandings, fetchStatLeaders, fetchAllPolls } from '../api/firestore.js'
+import { subscribeToScoreboard, fetchStandings, fetchStatLeaders, fetchOfficialBoard, fetchAllPolls } from '../api/firestore.js'
 import { STATS_M, STATS_W } from '../data/mockData.js'
 // ── useScores — real-time Firestore only ─────────────────────────────────────
 // date is YYYYMMDD (e.g. "20260524"); division is "1"/"2"/"3". Both are passed
@@ -73,14 +73,21 @@ export function useStandings(gender, division = '1') {
 // or a thrown query (e.g. a missing composite index during a build window)
 // resolves to an empty state — never populated fake rows that look like real
 // leaderboards.
+//
+// Boards in OFFICIAL_BOARDS come from the NCAA's official stat lists
+// (/leaderboards), everything else from box-score aggregates (/playerStats).
+const OFFICIAL_BOARDS = ['saves', 'faceoffs']
+
 export function useStatLeaders(gender, tab, division = '1') {
   const [rows,    setRows]    = useState([])
   const [loading, setLoading] = useState(true)
   const [source,  setSource]  = useState('loading')
+  const [throughDate, setThroughDate] = useState(null)
   useEffect(() => {
     let cancelled = false
+    setThroughDate(null)
     const useMock = (reason) => {
-      if (import.meta.env.DEV) {
+      if (import.meta.env.DEV && !OFFICIAL_BOARDS.includes(tab)) {
         const mock = gender === 'W' ? STATS_W : STATS_M
         setRows(mock[tab] || mock.goals)
         setSource('mock')
@@ -94,6 +101,18 @@ export function useStatLeaders(gender, tab, division = '1') {
     ;(async () => {
       setLoading(true)
       try {
+        if (OFFICIAL_BOARDS.includes(tab)) {
+          const board = await fetchOfficialBoard(gender, tab, division)
+          if (cancelled) return
+          if (board?.rows?.length) {
+            setRows(board.rows)
+            setThroughDate(board.throughDate)
+            setSource('official')
+          } else {
+            useMock('empty')
+          }
+          return
+        }
         const data = await fetchStatLeaders(gender, tab, division)
         if (!cancelled) {
           if (data && data.length > 0) {
@@ -111,7 +130,7 @@ export function useStatLeaders(gender, tab, division = '1') {
     })()
     return () => { cancelled = true }
   }, [gender, tab, division])
-  return { rows, loading, source }
+  return { rows, loading, source, throughDate }
 }
 // ── useGameDetail ────────────────────────────────────────────────────────────
 export function useGameDetail(gameId, gender, enabled = false) {

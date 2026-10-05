@@ -46,6 +46,11 @@ service cloud.firestore {
       allow read: if true;
     }
 
+    // Official NCAA goalie / face-off boards, written by ncaaLeaderboards.js.
+    match /leaderboards/{id} {
+      allow read: if true;
+    }
+
     match /records/{gender} {
       allow read: if true;
     }

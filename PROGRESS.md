@@ -8,6 +8,42 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 
 ---
 
+## 2026-10-05
+
+### Goalkeeper + face-off boards from the NCAA's official stat lists — BUILT, NOT DEPLOYED
+
+**Source find.** Evaluated an Apify "NCAA stats scraper"; it just reads ncaa.com's stat
+leaderboards. The NCAA API wrapper we already use serves the same lists free:
+`ncaa-api.henrygd.me/stats/lacrosse-{men,women}/d{1,2,3}/current/individual/{id}`. These come
+from the official season database, so they carry the per-player goalie lines the box-score API
+zero-fills, plus men's face-offs, which the box score lacks entirely.
+
+| Board | ids | Rows (D1/D2/D3) |
+|---|---|---|
+| Goalies M (save % + GAA joined) | 224 + 225 | 69 / 67 / 200 |
+| Goalies W (save % + GAA joined) | 242 + 243 | 115 / 87 / 200 |
+| Face-offs M | 410 | 76 / 77 / 200 |
+
+- New `functions/src/scrapers/ncaaLeaderboards.js` → `/leaderboards/{season}-{M|W}-d{div}-{saves|faceoffs}`.
+  Runs in `scrapeNightly`; manual: `triggerStatsInflationDiagnostic?task=leaderboards-dry|leaderboards-apply`.
+- Season from the source's "Through games" date — the API year param means the FALL year
+  (2025 = spring 2026, and 2026 also = spring 2026), so we always ask for `current`.
+- Never overwrites a board with an empty fetch; fails loudly on a column rename.
+- Qualifiers only (min. share of team minutes / face-offs); the source caps at 4 pages, so D3 = top 200.
+- Ties come as rank `-`; carried down. Minutes are real minutes (unlike `goalieMinutes` = seconds).
+- Team links: rows get `teamSeo` from our own /games (same short names as the scoreboard).
+  D1 links 260/260. D2/D3 ~55-70%: the remainder is the existing programs-list gap (Queued #4).
+- Stats page: Goalkeepers tab restored (both genders), new men's Face-Offs tab, source line
+  "NCAA official statistics · through May 25, 2026 · qualified players only". Old playerStats saves path removed.
+- Verified in the dev build against dry-run data: all 9 boards render, sorting, gender-gated
+  tabs, row links, no console errors.
+
+**To ship (needs go-ahead):** `firebase deploy --only firestore:rules`, `--only functions:scrapeNightly,functions:triggerStatsInflationDiagnostic`,
+then `--only hosting`; run `task=leaderboards-apply` once (needs DIAGNOSTIC_TOKEN).
+
+**Found in passing (separate task):** women's D3 Goals shows Northern Mich. (D2) at #1 —
+that team's players are split across div 2 and div 3 playerStats docs.
+
 ## 2026-10-03
 
 ### Polls audit — DEPLOYED 2026-10-05

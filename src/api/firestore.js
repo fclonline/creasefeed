@@ -265,8 +265,8 @@ function normPos(raw) {
 // ── Fetch stat leaders from aggregated playerStats ────────────────────────────
 export async function fetchStatLeaders(gender, stat = 'goals', division = '1') {
   try {
+    // Goalies and face-offs are NOT read from here -- see fetchOfficialBoard.
     const orderField =
-      stat === 'saves'   ? 'saves' :
       stat === 'assists' ? 'assists' :
       stat === 'draws'   ? 'drawControls' : 'goals'
     const q = query(
@@ -282,15 +282,6 @@ export async function fetchStatLeaders(gender, stat = 'goals', division = '1') {
 
     return snap.docs.map((d, i) => {
       const r = d.data()
-      const saves    = r.saves        || 0
-      const ga       = r.goalsAllowed || 0
-      // `goalieMinutes` is a misnomer: the NCAA box score reports goalie time
-      // in SECONDS, and the aggregator stores it verbatim. GAA is therefore
-      // goals-against per 3600s, not per 60.
-      const gSecs    = r.goalieMinutes || 0
-      const svptotal = saves + ga
-      const svpct = svptotal > 0 ? (saves / svptotal).toFixed(3).replace(/^0\./, '.') : '—'
-      const gaa   = gSecs   > 0 ? (ga * 3600 / gSecs).toFixed(2) : '—'
       return {
         rank:   i + 1,
         name:   r.name,
@@ -302,10 +293,6 @@ export async function fetchStatLeaders(gender, stat = 'goals', division = '1') {
         a:      r.assists || 0,
         pts:    r.points  || 0,
         gpg:    r.gp ? (r.goals / r.gp).toFixed(1) : '—',
-        sv:     saves,
-        ga,
-        svpct,
-        gaa,
         apg:    r.gp ? (r.assists / r.gp).toFixed(1) : '—',
         // Draw controls: the women's possession stat, and the only face-off
         // equivalent the NCAA box score carries. Men's docs are all 0 here.
@@ -316,6 +303,36 @@ export async function fetchStatLeaders(gender, stat = 'goals', division = '1') {
     })
   } catch (err) {
     console.warn('[CreaseFeed] fetchStatLeaders failed:', err.message)
+    return null
+  }
+}
+
+// ── Fetch an official NCAA leaderboard (goalies, face-offs) ──────────────────
+// One doc per board, written nightly by functions/src/scrapers/ncaaLeaderboards.js
+// from ncaa.com's official stat lists -- not aggregated from box scores, which
+// carry no usable per-player goalie lines and no face-offs at all.
+// Returns { rows, throughDate } or null.
+const fmtPct = (v) => v == null ? '—' : v.toFixed(3).replace(/^0\./, '.')
+const fmtOr  = (v, d) => v == null ? '—' : (d == null ? v : v.toFixed(d))
+
+export async function fetchOfficialBoard(gender, stat, division = '1') {
+  try {
+    const snap = await getDoc(doc(db, 'leaderboards', `${SEASON}-${gender}-d${division}-${stat}`))
+    if (!snap.exists()) return null
+    const b = snap.data()
+    const rows = (b.rows || []).map(r => ({
+      rank: r.rank, name: r.name, team: r.team || '—', teamSeo: r.teamSeo || '',
+      cl: r.cl || '—', pos: normPos(r.pos), gp: fmtOr(r.gp),
+      // goalies -- minutes are real minutes here, unlike playerStats.goalieMinutes
+      min: fmtOr(r.min), sv: fmtOr(r.sv), ga: fmtOr(r.ga),
+      svpct: fmtPct(r.svpct), gaa: fmtOr(r.gaa, 2),
+      // face-offs
+      fow: fmtOr(r.fow), fol: fmtOr(r.fol), fot: fmtOr(r.fot),
+      fopct: fmtPct(r.fopct),
+    }))
+    return { rows, throughDate: b.throughDate || null }
+  } catch (err) {
+    console.warn('[CreaseFeed] fetchOfficialBoard failed:', err.message)
     return null
   }
 }

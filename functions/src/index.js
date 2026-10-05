@@ -21,6 +21,7 @@ import { fetchAllBoxScores, backfillBoxScores, processOneBoxScore, backfillBoxSc
 import { scrapeAllPolls } from './scrapers/polls.js'
 import { fetchNcaaScores, backfillScoreboards } from './scrapers/ncaaScores.js'
 import { aggregateRecords } from './scrapers/aggregateRecords.js'
+import { scrapeOfficialLeaderboards } from './scrapers/ncaaLeaderboards.js'
 import { runStatsInflationDiagnostic } from './diagnostics/statsInflation.js'
 import { rebuildPlayerStats, purgeGhostPlayerStats } from './diagnostics/rebuildPlayerStats.js'
 
@@ -81,6 +82,10 @@ export const scrapeNightly = onSchedule({
   await fetchAllBoxScores()
   await scrapeAllPolls()
   await aggregateRecords()
+  // Official goalie + face-off boards. Isolated so a source outage can't fail
+  // the rest of the nightly run.
+  await scrapeOfficialLeaderboards().catch(err =>
+    console.error('[nightly] leaderboards failed:', err.message))
   console.log('[nightly] ✓ Complete')
 })
 
@@ -216,6 +221,8 @@ export const triggerStatsInflationDiagnostic = onRequest({
   //   (default)      read-only inflation diagnostic
   //   rebuild-dry    rebuild dry run  -- reports, writes nothing
   //   rebuild-apply  rebuild for real -- REQUIRES &confirm=REBUILD
+  //   leaderboards-dry    official goalie/face-off boards -- reports only
+  //   leaderboards-apply  fetch + write them (same as the nightly run)
   const task = String(req.query.task || 'inflation')
   console.log(`[triggerStatsInflationDiagnostic] task=${task}`)
   try {
@@ -234,6 +241,10 @@ export const triggerStatsInflationDiagnostic = onRequest({
         return
       }
       res.json({ ok: true, ...(await backfillBoxScoresForDates({ start, end })) })
+      return
+    }
+    if (task === 'leaderboards-dry' || task === 'leaderboards-apply') {
+      res.json(await scrapeOfficialLeaderboards({ dryRun: task === 'leaderboards-dry' }))
       return
     }
     if (task === 'purge-ghosts-dry') {
