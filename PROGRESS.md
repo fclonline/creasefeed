@@ -10,7 +10,7 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 
 ## 2026-10-05
 
-### Goalkeeper + face-off boards from the NCAA's official stat lists — BUILT, NOT DEPLOYED
+### Goalkeeper + face-off boards from the NCAA's official stat lists — DEPLOYED 2026-10-05
 
 **Source find.** Evaluated an Apify "NCAA stats scraper"; it just reads ncaa.com's stat
 leaderboards. The NCAA API wrapper we already use serves the same lists free:
@@ -38,8 +38,10 @@ zero-fills, plus men's face-offs, which the box score lacks entirely.
 - Verified in the dev build against dry-run data: all 9 boards render, sorting, gender-gated
   tabs, row links, no console errors.
 
-**To ship (needs go-ahead):** `firebase deploy --only firestore:rules`, `--only functions:scrapeNightly,functions:triggerStatsInflationDiagnostic`,
-then `--only hosting`; run `task=leaderboards-apply` once (needs DIAGNOSTIC_TOKEN).
+**Shipped 2026-10-05:** rules, `scrapeNightly` + `triggerStatsInflationDiagnostic`, hosting; ran
+`task=leaderboards-apply` — all 9 boards written. Live site: M GK 69/69 rows linked, M FO 76/76,
+W GK 115/115, source line correct. Men's D1 face-off top 3 match ncaa.com exactly. The
+`scrapeNightly` deploy failed once on a Cloud Scheduler request and succeeded on retry.
 
 **Found in passing (separate task):** women's D3 Goals shows Northern Mich. (D2) at #1 —
 that team's players are split across div 2 and div 3 playerStats docs.
