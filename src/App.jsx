@@ -36,7 +36,7 @@ export default function App() {
 
   // Show onboarding when user is new or explicitly editing teams
   // New accounts that arrive with teams already picked (merged from
-  // cf_pending_follows) skip the onboarding picker.
+  // signed-out picks) skip the onboarding picker.
   const shouldOnboard = (user && isNewUser && followedList.length === 0) || showOnboarding
 
   const handleOnboardingDone = () => {

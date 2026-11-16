@@ -11,7 +11,7 @@ import { GameModal } from '../components/shared.jsx'
 import PollCard from '../components/PollCard.jsx'
 import TeamChip from '../components/TeamChip.jsx'
 import { SEASON_YEAR, daysUntilSeason, seasonStartLabel } from '../config/season.js'
-import { LIVE_PRO_FEATURES, PRO_PRICE_MONTHLY, PRO_PRICE_ANNUAL, FOLLOW_LIMIT_NOTE, FREE_FOLLOW_LIMIT } from '../config/pro.js'
+import { LIVE_PRO_FEATURES, PRO_PRICE_MONTHLY, PRO_PRICE_ANNUAL, FOLLOW_LIMIT_NOTE, SAVE_FOLLOWS_NOTE, FREE_FOLLOW_LIMIT } from '../config/pro.js'
 import { programIdForSeo } from '../data/teamColors.js'
 import { PROGRAMS, canonTeam } from '../data/programs.js'
 
@@ -98,6 +98,7 @@ export default function OffseasonHome({ gender, setGender, division, setDivision
   const follow = async (programId) => {
     const r = await toggleFollow(programId)
     if (r?.error === 'pro') onAuthClick('pro', FOLLOW_LIMIT_NOTE)
+    else if (r?.error === 'signup' || r?.needsAccount) onAuthClick('signin', SAVE_FOLLOWS_NOTE)
   }
 
   const chipTeams = meta.standings.slice(0, 5)

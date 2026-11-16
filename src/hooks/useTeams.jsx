@@ -24,20 +24,19 @@ export const ALERT_LABELS = {
 
 const TeamsContext = createContext(null)
 
-// Signed-out picks live here until the visitor saves their feed (program ids).
+// Signed-out picks are held in memory for the visit only. A free account is
+// what saves them: on sign-in they merge into users/{uid}.followedTeams, and a
+// refresh or closed tab before then drops them.
+// Earlier builds kept them in localStorage under this key; it is read once to
+// carry those picks into the visit, then removed.
 export const PENDING_KEY = 'cf_pending_follows'
 
-function readPending() {
+function takeLegacyPending() {
   try {
     const raw = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]')
-    return Array.isArray(raw) ? [...new Set(raw.filter(id => typeof id === 'string' && getProgramById(id)))] : []
+    localStorage.removeItem(PENDING_KEY)
+    return Array.isArray(raw) ? [...new Set(raw.filter(id => typeof id === 'string' && getProgramById(id)))].slice(0, FREE_FOLLOW_LIMIT) : []
   } catch { return [] }
-}
-function writePending(ids) {
-  try {
-    if (ids.length) localStorage.setItem(PENDING_KEY, JSON.stringify(ids))
-    else localStorage.removeItem(PENDING_KEY)
-  } catch {}
 }
 
 export function TeamsProvider({ children }) {
@@ -46,7 +45,9 @@ export function TeamsProvider({ children }) {
   const [followedTeams, setFollowedTeams] = useState({})
   const [onboardingDone, setOnboardingDone] = useState(true)
   const [loading, setLoading] = useState(true)
-  const [pending, setPending] = useState(readPending)
+  const [pending, setPending] = useState(takeLegacyPending)
+  const pendingRef = useRef(pending)
+  const setPendingIds = (ids) => { pendingRef.current = ids; setPending(ids) }
   // Set when a sign-in merge had to leave pending teams out (free cap).
   const [mergeOverflow, setMergeOverflow] = useState(0)
   const mergedFor = useRef(null)
@@ -69,7 +70,7 @@ export function TeamsProvider({ children }) {
 
       // Merge signed-out picks once per sign-in: keep every saved follow, add
       // pending ones up to the free cap, never delete anything.
-      const queued = readPending()
+      const queued = pendingRef.current
       if (queued.length && mergedFor.current !== user.uid) {
         mergedFor.current = user.uid
         const isPro = data.pro === true
@@ -80,8 +81,7 @@ export function TeamsProvider({ children }) {
           if (!isPro && Object.keys(merged).length >= FREE_FOLLOW_LIMIT) { left++; continue }
           merged[id] = { alertLevel: ALERT_LEVELS.FINAL, followedAt: Date.now() }
         }
-        writePending([])
-        setPending([])
+        setPendingIds([])
         setMergeOverflow(left)
         setFollowedTeams(merged)
         if (Object.keys(merged).length !== Object.keys(existing).length) {
@@ -101,15 +101,17 @@ export function TeamsProvider({ children }) {
     return unsub
   }, [user])
 
-  // Follow a team (free: up to 2, pro: unlimited). Signed out → pending list.
+  // Follow a team (free: up to 2, pro: unlimited). Signed out → in-memory
+  // picks; the result tells the caller to ask for a free account
+  // (needsAccount), or error 'signup' when the picks are already at the cap.
   const followTeam = useCallback(async (teamId, alertLevel = ALERT_LEVELS.FINAL) => {
     if (!user) {
-      const cur = readPending()
-      if (cur.includes(teamId)) return { ok: true }
-      if (cur.length >= FREE_FOLLOW_LIMIT) return { error: 'pro' }
+      const cur = pendingRef.current
+      if (cur.includes(teamId)) return { ok: true, needsAccount: true, count: cur.length }
+      if (cur.length >= FREE_FOLLOW_LIMIT) return { error: 'signup' }
       const next = [...cur, teamId]
-      writePending(next); setPending(next)
-      return { ok: true }
+      setPendingIds(next)
+      return { ok: true, needsAccount: true, count: next.length }
     }
     const count = Object.keys(followedTeams).length
     if (!pro && count >= FREE_FOLLOW_LIMIT && !followedTeams[teamId]) return { error: 'pro' }
@@ -126,8 +128,7 @@ export function TeamsProvider({ children }) {
   // Unfollow a team
   const unfollowTeam = useCallback(async (teamId) => {
     if (!user) {
-      const next = readPending().filter(id => id !== teamId)
-      writePending(next); setPending(next)
+      setPendingIds(pendingRef.current.filter(id => id !== teamId))
       return
     }
     const updated = { ...followedTeams }

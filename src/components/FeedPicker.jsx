@@ -1,7 +1,7 @@
 // ============================================================================
 // src/components/FeedPicker.jsx — teams-first My Feed (docs/mockups/Feed.dc.html)
-// Signed-out visitors pick teams with no account; picks persist in
-// localStorage (cf_pending_follows) until "Save my feed — free" signs them in,
+// Signed-out visitors pick teams with no account; picks are held in
+// memory for the visit until "Save my feed — free" signs them in,
 // at which point useTeams merges them into Firestore.
 // ============================================================================
 import { useEffect, useMemo, useState } from 'react'
@@ -11,7 +11,7 @@ import { searchPrograms, canonTeam } from '../data/programs.js'
 import { PROGRAM_SEO } from '../data/teamColors.js'
 import { fetchTeamGames } from '../api/firestore.js'
 import { seasonStartLabel } from '../config/season.js'
-import { FOLLOW_LIMIT_NOTE } from '../config/pro.js'
+import { FOLLOW_LIMIT_NOTE, SAVE_FOLLOWS_NOTE, FREE_FOLLOW_LIMIT } from '../config/pro.js'
 import TeamChip from './TeamChip.jsx'
 import { finalLine } from './shared.jsx'
 
@@ -108,13 +108,14 @@ export default function FeedPicker({ gender: initialGender = 'M', division: init
   const follow = async (id) => {
     const r = await toggleFollow(id)
     if (r?.error === 'pro') onAuthClick('pro', FOLLOW_LIMIT_NOTE)
+    else if (r?.error === 'signup' || (r?.needsAccount && r.count >= FREE_FOLLOW_LIMIT)) onAuthClick('signin', SAVE_FOLLOWS_NOTE)
   }
 
   const n = followedList.length
   return (
     <div className={`fp ${!user ? 'has-bar' : ''}`}>
       <div className="fp-head">
-        {!user && <span className="fp-step">Step 1 of 2 · No account needed</span>}
+        {!user && <span className="fp-step">Step 1 of 2 · Pick up to 2 teams</span>}
         <h1>Pick your teams</h1>
       </div>
 
@@ -160,8 +161,8 @@ export default function FeedPicker({ gender: initialGender = 'M', division: init
 
       {!user && (
         <div className="fp-bar">
-          <span><strong>{n} {n === 1 ? 'team' : 'teams'}</strong> selected</span>
-          <button type="button" className="btn-ink" onClick={() => onAuthClick('signin')}>Save my feed — free</button>
+          <span><strong>{n} {n === 1 ? 'team' : 'teams'}</strong> picked{n > 0 && ' · not saved yet'}</span>
+          <button type="button" className="btn-ink" onClick={() => onAuthClick('signin', n > 0 ? SAVE_FOLLOWS_NOTE : '')}>Save my feed — free</button>
         </div>
       )}
     </div>

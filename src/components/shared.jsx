@@ -863,6 +863,7 @@ export function AuthModal({ mode, note, onClose, isW }) {
         ) : (
           <>
             <div className="auth-title">{emailMode === 'signup' ? 'Create your free account' : 'Welcome back'}</div>
+            {note && <div className="pro-modal-note" role="status">{note}</div>}
             <div className="auth-sub">
               {emailMode === 'signup'
                 ? 'Free to follow up to 2 teams. No card required.'
