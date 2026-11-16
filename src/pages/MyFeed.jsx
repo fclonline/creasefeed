@@ -13,20 +13,20 @@ const CSS = `
   grid-column: 1 / -1; text-align: center; padding: 80px 20px;
 }
 .myfeed-empty-icon { font-size: 48px; margin-bottom: 16px; opacity: .4; }
-.myfeed-empty-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 28px; margin-bottom: 8px; }
-.myfeed-empty-sub   { font-family: 'Barlow', sans-serif; font-size: 14px; color: var(--mid); margin-bottom: 24px; }
-.myfeed-empty-cta   { background: var(--accent); color: #000; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; padding: 10px 24px; cursor: pointer; transition: background .15s; border: none; }
-.myfeed-empty-cta:hover { background: #00ff88; }
+.myfeed-empty-title { font-family: 'Barlow Condensed', sans-serif; font-weight:800; font-size: 28px; margin-bottom: 8px; }
+.myfeed-empty-sub   { font-family: 'Inter',sans-serif; font-size: 14px; color: var(--mid); margin-bottom: 24px; }
+.myfeed-empty-cta   { background: var(--accent); color:var(--cf-on-green); font-family: 'Barlow Condensed', sans-serif; font-weight:800; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; padding: 10px 24px; cursor: pointer; transition: background .15s; border: none; }
+.myfeed-empty-cta:hover { background: var(--accent-hover); }
 
 /* following sidebar */
 .following-widget { background: var(--surface); border: 1px solid var(--border); }
-.fw-team-row { padding: 10px 14px; border-bottom: 1px solid rgba(30,45,69,.4); display: flex; align-items: center; gap: 10px; }
+.fw-team-row { padding: 10px 14px; border-bottom: 1px solid var(--hairline); display: flex; align-items: center; gap: 10px; }
 .fw-team-row:last-child { border-bottom: none; }
 .fw-team-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; flex: 1; }
-.fw-team-meta { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--muted); }
+.fw-team-meta { font-family: 'Inter',sans-serif; font-size:13px; color: var(--muted); }
 .fw-alert-select {
   background: var(--surface2); border: 1px solid var(--border2); color: var(--mid);
-  font-family: 'Barlow Condensed', sans-serif; font-size: 11px; padding: 3px 6px; cursor: pointer; outline: none;
+  font-family: 'Barlow Condensed', sans-serif; font-size:13px; padding: 3px 6px; cursor: pointer; outline: none;
 }
 .fw-unfollow { color: var(--muted); font-size: 16px; cursor: pointer; transition: color .15s; }
 .fw-unfollow:hover { color: var(--red); }
@@ -34,9 +34,9 @@ const CSS = `
 
 /* gender toggle (My Feed only) */
 .myfeed-genderbar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
-.myfeed-gender-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+.myfeed-gender-label { font-family: 'Barlow Condensed', sans-serif; font-size:13px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
 .myfeed-gender-toggle { display: flex; border: 1px solid var(--border2); overflow: hidden; }
-.myfeed-gtab { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 16px; color: var(--muted); border-right: 1px solid var(--border2); transition: all .15s; background: transparent; }
+.myfeed-gtab { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size:13px; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 16px; color: var(--muted); border-right: 1px solid var(--border2); transition: all .15s; background: transparent; }
 .myfeed-gtab:last-child { border-right: none; }
 .myfeed-gtab:hover { color: var(--text); background: var(--surface2); }
 .myfeed-gtab.active-all { background: var(--surface3); color: var(--text); }
@@ -45,7 +45,7 @@ const CSS = `
 
 /* game card following badge */
 .gc-following-badge {
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 9px;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size:13px;
   letter-spacing: 1.5px; padding: 2px 6px; text-transform: uppercase;
   position: absolute; top: 10px; right: 10px;
 }
@@ -66,8 +66,8 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
       <>
         <style>{CSS}</style>
         <div style={{ padding: '80px 28px', textAlign: 'center' }}>
-          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 28, marginBottom: 8 }}>Sign in to see your feed</div>
-          <div style={{ fontFamily: "'Barlow'", fontSize: 14, color: 'var(--mid)', marginBottom: 24 }}>Follow your teams and get personalized alerts.</div>
+          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 28, marginBottom: 8 }}>Sign in to see your feed</div>
+          <div style={{ fontFamily: "'Inter'", fontSize: 14, color: 'var(--mid)', marginBottom: 24 }}>Follow your teams and get personalized alerts.</div>
           <button className="myfeed-empty-cta" onClick={() => onAuthClick('signin')}>Sign In →</button>
         </div>
       </>
@@ -113,8 +113,8 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
             </div>
           ) : myGames.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 22, marginBottom: 8 }}>No games today for your teams</div>
-              <div style={{ fontFamily: "'Barlow'", fontSize: 14, color: 'var(--mid)' }}>Check the Schedule tab for upcoming games.</div>
+              <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>No games today for your teams</div>
+              <div style={{ fontFamily: "'Inter'", fontSize: 14, color: 'var(--mid)' }}>Check the Schedule tab for upcoming games.</div>
             </div>
           ) : (
             <>
@@ -137,10 +137,10 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
 
               {genderFiltered.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '50px 20px' }}>
-                  <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 20, marginBottom: 6 }}>
+                  <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 20, marginBottom: 6 }}>
                     No {genderFilter === 'M' ? "men's" : "women's"} games today for your teams
                   </div>
-                  <div style={{ fontFamily: "'Barlow'", fontSize: 13, color: 'var(--mid)' }}>Switch the filter above or check the Schedule tab.</div>
+                  <div style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--mid)' }}>Switch the filter above or check the Schedule tab.</div>
                 </div>
               ) : (
                 <>
@@ -191,14 +191,14 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
               <span className="widget-title">Following ({followedList.length})</span>
               <button
                 onClick={onEditTeams}
-                style={{ fontFamily: "'Barlow Condensed'", fontWeight: 700, fontSize: 11, letterSpacing: '1px', color: 'var(--accent)', cursor: 'pointer', background: 'none', border: 'none' }}
+                style={{ fontFamily: "'Barlow Condensed'", fontWeight: 700, fontSize: 13, letterSpacing: '1px', color: 'var(--accent)', cursor: 'pointer', background: 'none', border: 'none' }}
               >
                 EDIT →
               </button>
             </div>
 
             {followedList.length === 0 ? (
-              <div style={{ padding: '20px 14px', fontFamily: "'Barlow'", fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>
+              <div style={{ padding: '20px 14px', fontFamily: "'Inter'", fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>
                 No teams followed yet.
                 <br />
                 <button onClick={onEditTeams} style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit', marginTop: 8 }}>
@@ -242,15 +242,15 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
               background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
               padding: '16px 14px',
             }}>
-              <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 16, color: 'var(--accent)', marginBottom: 6 }}>
+              <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 16, color: 'var(--accent)', marginBottom: 6 }}>
                 {followedList.length >= 2 ? 'Following limit reached' : `${followedList.length}/2 free teams used`}
               </div>
-              <div style={{ fontFamily: "'Barlow'", fontSize: 12, color: 'var(--mid)', marginBottom: 12, lineHeight: 1.6 }}>
+              <div style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--mid)', marginBottom: 12, lineHeight: 1.6 }}>
                 Upgrade to Pro to follow unlimited teams.
               </div>
               <button
                 onClick={() => onAuthClick('pro')}
-                style={{ background: 'var(--accent)', color: '#000', border: 'none', fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 12, letterSpacing: '2px', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer', width: '100%' }}
+                style={{ background: 'var(--accent)', color: 'var(--cf-on-green)', border: 'none', fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 13, letterSpacing: '2px', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer', width: '100%' }}
               >
                 Go Pro →
               </button>

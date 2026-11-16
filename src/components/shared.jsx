@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useTheme } from '../hooks/useTheme.jsx'
+import { Lockup, Wordmark } from './Brand.jsx'
 import { useGameDetail } from '../hooks/useScores.jsx'
 import { useSeasonState, useLastFinal } from '../hooks/useSeasonState.jsx'
 import { SEASON_YEAR, seasonStartLabel } from '../config/season.js'
@@ -149,10 +150,7 @@ export function Navbar({ page, setPage, gender, division, isW, onAuthClick, foll
 
   return (
     <nav className="navbar">
-      <div className="logo-wrap" onClick={() => setPage('scores')}>
-        <div className="logo">CREASE<em>FEED</em></div>
-        <div className="logo-tag">Feed the Crease</div>
-      </div>
+      <Lockup onClick={() => setPage('scores')} />
 
       <div className="nav-links">
         {[
@@ -169,13 +167,7 @@ export function Navbar({ page, setPage, gender, division, isW, onAuthClick, foll
             onClick={() => setPage(n.key)}
           >
             {n.label}
-            {n.badge && (
-              <span style={{
-                background: ac(isW), color: '#000',
-                fontFamily: "'IBM Plex Mono'", fontSize: 9, fontWeight: 600,
-                padding: '1px 5px', borderRadius: 8, marginLeft: 6,
-              }}>{n.badge}</span>
-            )}
+            {n.badge && <span className="nav-badge">{n.badge}</span>}
           </button>
         ))}
       </div>
@@ -536,7 +528,7 @@ export function GameModal({ game, onClose, isW, espnId, gender }) {
         <div className="modal-scoreboard">
           <div className="msb-team away">
             <span className="away-tag">AWAY</span>
-            {game.away.rank && <div style={{ fontFamily: "'IBM Plex Mono'", fontSize: 11, color: 'var(--muted)' }}>#{game.away.rank}</div>}
+            {game.away.rank && <div style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--muted)' }}>#{game.away.rank}</div>}
             <div className="msb-school" style={{ color: hasScore && !awayWin ? 'var(--muted)' : 'var(--text)' }}>{game.away.name}</div>
             <div className="msb-rec">{game.away.rec}</div>
           </div>
@@ -559,7 +551,7 @@ export function GameModal({ game, onClose, isW, espnId, gender }) {
 
           <div className="msb-team home">
             <span className={`home-tag ${isW ? 'w' : ''}`}>HOME</span>
-            {game.home.rank && <div style={{ fontFamily: "'IBM Plex Mono'", fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>#{game.home.rank}</div>}
+            {game.home.rank && <div style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--muted)', textAlign: 'right' }}>#{game.home.rank}</div>}
             <div className="msb-school" style={{ color: hasScore && awayWin ? 'var(--muted)' : 'var(--text)', textAlign: 'right' }}>{game.home.name}</div>
             <div className="msb-rec" style={{ textAlign: 'right' }}>{game.home.rec}</div>
           </div>
@@ -583,7 +575,7 @@ export function GameModal({ game, onClose, isW, espnId, gender }) {
         {hasScore && (
           <div className="modal-body">
             {detailLoading && (
-              <div style={{textAlign:'center',padding:'20px',color:'var(--muted)',fontFamily:"'IBM Plex Mono'",fontSize:11}}>
+              <div style={{textAlign:'center',padding:'20px',color:'var(--muted)',fontFamily:"'Inter'",fontSize: 13}}>
                 Loading game details...
               </div>
             )}
@@ -651,7 +643,7 @@ export function GameModal({ game, onClose, isW, espnId, gender }) {
 
               {/* No detail data */}
               {!detailLoading && quarters.length === 0 && plays.length === 0 && teamStats.length === 0 && (
-                <div style={{textAlign:'center',padding:'30px 20px',color:'var(--muted)',fontFamily:"'Barlow'",fontSize:13}}>
+                <div style={{textAlign:'center',padding:'30px 20px',color:'var(--muted)',fontFamily:"'Inter'",fontSize:13}}>
                   Detailed stats not yet available for this game.
                 </div>
               )}
@@ -786,8 +778,7 @@ export function AuthModal({ mode, onClose, isW }) {
       <div className="auth-modal" onClick={e => e.stopPropagation()}>
         {view === 'pro' ? (
           <>
-            <div className="auth-title" style={{ color }}>Go Pro</div>
-            <div className="auth-sub" style={{ fontStyle: 'italic', color, opacity: 0.85, marginBottom: 8 }}>Feed the Crease.</div>
+            <div className="auth-title">Go Pro</div>
             {pro ? (
               <>
                 <div className="auth-sub" style={{ marginBottom: 16 }}>
@@ -908,15 +899,14 @@ export function Footer() {
     <footer className="footer">
       <div className="footer-inner">
         <div>
-          <div className="footer-logo">CREASE<em>FEED</em></div>
-          <div className="footer-tag">Feed the Crease · creasefeed.com</div>
+          <div className="footer-logo"><Wordmark /></div>
+          <div className="footer-tag">Feed the Crease.</div>
         </div>
         <div className="footer-links">
           <a className="footer-link" href="#">About</a>
           <a className="footer-link" href="#">Contact</a>
           <a className="footer-link" href="#">Privacy</a>
           <a className="footer-link" href="#">Terms</a>
-          <a className="footer-link" href="#">Data API</a>
         </div>
       </div>
     </footer>

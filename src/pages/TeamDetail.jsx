@@ -181,7 +181,7 @@ export default function TeamDetailPage({ teamId, isW, onBack, onAuthClick }) {
         <div className="team-header-info">
           <div className="team-header-name">{program.name}</div>
           <div className="team-header-meta">
-            <span className="team-badge" style={{ background: accentColor, color: '#000' }}>
+            <span className="team-badge" style={{ background: accentColor, color: 'var(--cf-on-green)' }}>
               {pIsW ? "Women's" : "Men's"} D{program.div}
             </span>
             <span className="team-header-conf">{program.conf}</span>

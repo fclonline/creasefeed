@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&display=block" rel="stylesheet">
+<style>html,body{margin:0;background:transparent;overflow:hidden}svg{display:block;width:100vw;height:100vh}</style>
+</head><body>
+<script>
+// ?mode=full|ring|maskable|square (square = full-bleed, iOS rounds it) — rendered by scripts/icons/build-icons.sh
+const mode = new URLSearchParams(location.search).get('mode') || 'full'
+const letters = mode !== 'ring'
+const bg = (mode === 'maskable' || mode === 'square')
+  ? '<rect width="120" height="120" fill="#0E1A2B"/>'
+  : '<rect width="120" height="120" rx="26" fill="#0E1A2B"/>'
+// maskable: keep the ring inside the 80% safe zone
+const s = mode === 'maskable' ? 0.78 : 1
+const r = (letters ? 37 : 36.5) * s, w = (letters ? 8 : 9.5) * s
+document.body.innerHTML = `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">${bg}
+<circle cx="60" cy="60" r="${r}" fill="none" stroke="#1D6B44" stroke-width="${w}"/>
+${letters ? `<text x="60" y="61" text-anchor="middle" dominant-baseline="central" font-family="'Barlow Condensed'" font-weight="800" font-size="${34*s}" fill="#fff">CF</text>` : ''}
+</svg>`
+</script>
+</body></html>

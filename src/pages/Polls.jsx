@@ -83,7 +83,7 @@ export default function PollsPage({ gender, division, isW }) {
             {t.label}
           </button>
         ))}
-        <div style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed'", fontSize: 11, color: 'var(--muted)', letterSpacing: '1px' }}>
+        <div style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed'", fontSize: 13, color: 'var(--muted)', letterSpacing: '1px' }}>
           {gender === 'M' ? "Men's" : "Women's"} · D{div} · 2026 Season
         </div>
       </div>

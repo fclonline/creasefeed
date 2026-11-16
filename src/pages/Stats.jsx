@@ -139,14 +139,14 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
             {t.label}
           </button>
         ))}
-        <div style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed'", fontSize: 11, color: 'var(--muted)', letterSpacing: '1px' }}>
+        <div style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed'", fontSize: 13, color: 'var(--muted)', letterSpacing: '1px' }}>
           {gender === 'M' ? "Men's" : "Women's"} · D{division} · {getSeason()} Season
         </div>
       </div>
 
       {/* Data source indicator — meaningless on a withheld tab, so hidden */}
       {!withheld && sourceLabel && <div style={{
-        fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+        fontFamily: "'Inter',sans-serif", fontSize: 13,
         color: 'var(--muted)',
         marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5,
       }}>
@@ -162,10 +162,10 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
           textAlign: 'center', padding: '60px 20px',
           border: '1px dashed var(--border2)', margin: '20px 0',
         }}>
-          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 22, marginBottom: 8 }}>
+          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>
             {withheld.title}
           </div>
-          <div style={{ fontFamily: "'Barlow'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, maxWidth: 460, margin: '0 auto' }}>
+          <div style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, maxWidth: 460, margin: '0 auto' }}>
             {withheld.body}
           </div>
         </div>
@@ -182,10 +182,10 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
           textAlign: 'center', padding: '60px 20px',
           border: '1px dashed var(--border2)', margin: '20px 0',
         }}>
-          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 22, marginBottom: 8 }}>
+          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>
             No {tab.label.toLowerCase()} leaders yet
           </div>
-          <div style={{ fontFamily: "'Barlow'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
+          <div style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
             Stats update after games are final.
           </div>
         </div>

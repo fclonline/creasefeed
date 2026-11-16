@@ -286,10 +286,10 @@ export default function SchedulePage({ gender, division, isW }) {
           textAlign: 'center', padding: '60px 20px',
           border: '1px dashed var(--border2)', margin: '20px 0',
         }}>
-          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 22, marginBottom: 8, color: 'var(--muted)' }}>
+          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 22, marginBottom: 8, color: 'var(--muted)' }}>
             NO GAMES
           </div>
-          <div style={{ fontFamily: "'Barlow'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
+          <div style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
             No games scheduled for {selectedDate ? `${MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getDate()}` : 'this date'}.
           </div>
         </div>
@@ -306,7 +306,7 @@ export default function SchedulePage({ gender, division, isW }) {
       {/* Conference grouping */}
       {groupBy === 'conf' && confGroups.map(([conf, games]) => (
         <div key={conf}>
-          <div className="sched-day-header">{conf} <span style={{ fontFamily: "'IBM Plex Mono'", fontSize: 10, color: 'var(--muted)', marginLeft: 8 }}>{games.length} games</span></div>
+          <div className="sched-day-header">{conf} <span style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>{games.length} games</span></div>
           {games.map(renderGameCard)}
         </div>
       ))}
