@@ -14,7 +14,7 @@ export const SEASON_START = null
 // Firestore game doc ids (e.g. 'ncaa-6599996') for the national championship
 // game, per gender. When set, the off-season ticker reads "2026 champion: …";
 // when null it reads "Last final: …". Deemer fills these in.
-export const CHAMPIONSHIP_GAME_IDS = { M: null, W: null }
+export const CHAMPIONSHIP_GAME_IDS = { M: 'ncaa-6599996', W: 'ncaa-6599965' }
 
 // Parsed SEASON_START as a local-midnight Date, or null.
 export function seasonStartDate() {
