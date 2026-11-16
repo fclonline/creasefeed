@@ -517,7 +517,9 @@ export function GameModal({ game, onClose, isW, espnId, gender, initialTab = 'su
   const quarters    = detail?.quarters || []
   const plays       = detail?.plays || []
   const teamStats   = detail?.teamStats || []
-  const playerStats = detail?.playerStats || []
+  // Per-team player tables only. NCAA game docs carry a flat player list the
+  // table can't render yet, so the Box score tab stays hidden for them.
+  const playerStats = (detail?.playerStats || []).filter(t => Array.isArray(t?.players) && t.players.length > 0)
 
   // Build quarter headers dynamically from actual data
   const numPeriods = quarters.length > 0 ? (quarters[0]?.scores?.length || 4) : 4
