@@ -31,10 +31,9 @@ const TeamsContext = createContext(null)
 // carry those picks into the visit, then removed.
 export const PENDING_KEY = 'cf_pending_follows'
 
-function takeLegacyPending() {
+function readLegacyPending() {
   try {
     const raw = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]')
-    localStorage.removeItem(PENDING_KEY)
     return Array.isArray(raw) ? [...new Set(raw.filter(id => typeof id === 'string' && getProgramById(id)))].slice(0, FREE_FOLLOW_LIMIT) : []
   } catch { return [] }
 }
@@ -45,9 +44,11 @@ export function TeamsProvider({ children }) {
   const [followedTeams, setFollowedTeams] = useState({})
   const [onboardingDone, setOnboardingDone] = useState(true)
   const [loading, setLoading] = useState(true)
-  const [pending, setPending] = useState(takeLegacyPending)
+  const [pending, setPending] = useState(readLegacyPending)
   const pendingRef = useRef(pending)
   const setPendingIds = (ids) => { pendingRef.current = ids; setPending(ids) }
+  // Legacy picks are now in memory; drop the stored copy so it never returns.
+  useEffect(() => { try { localStorage.removeItem(PENDING_KEY) } catch {} }, [])
   // Set when a sign-in merge had to leave pending teams out (free cap).
   const [mergeOverflow, setMergeOverflow] = useState(0)
   const mergedFor = useRef(null)

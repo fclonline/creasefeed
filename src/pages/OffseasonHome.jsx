@@ -145,7 +145,7 @@ export default function OffseasonHome({ gender, setGender, division, setDivision
         <div className="oh-start-hd">
           <div>
             <h2>Start your feed</h2>
-            <p>Tap a few teams. No account needed to try it.</p>
+            <p>Pick up to {FREE_FOLLOW_LIMIT} teams and save them with a free account.</p>
           </div>
           <button type="button" className="btn-green" onClick={() => setPage('feed')}>Build my feed</button>
         </div>
