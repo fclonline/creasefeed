@@ -139,7 +139,7 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
             {t.label}
           </button>
         ))}
-        <div style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed'", fontSize: 13, color: 'var(--muted)', letterSpacing: '1px' }}>
+        <div className="page-meta">
           {gender === 'M' ? "Men's" : "Women's"} · D{division} · {getSeason()} Season
         </div>
       </div>
@@ -162,7 +162,7 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
           textAlign: 'center', padding: '60px 20px',
           border: '1px dashed var(--border2)', margin: '20px 0',
         }}>
-          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>
+          <div className="empty-title">
             {withheld.title}
           </div>
           <div style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, maxWidth: 460, margin: '0 auto' }}>
@@ -172,7 +172,7 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
       )}
 
       {!withheld && loading && (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)', fontFamily: "'Barlow Condensed'", fontSize: 16 }}>
+        <div className="empty-note" style={{ padding: '60px 20px' }}>
           Loading stats...
         </div>
       )}
@@ -182,7 +182,7 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
           textAlign: 'center', padding: '60px 20px',
           border: '1px dashed var(--border2)', margin: '20px 0',
         }}>
-          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>
+          <div className="empty-title">
             No {tab.label.toLowerCase()} leaders yet
           </div>
           <div style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>

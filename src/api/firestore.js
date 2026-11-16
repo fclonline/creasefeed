@@ -467,3 +467,31 @@ export async function fetchTeamGames(gender, div, match) {
     return { last: null, next: null }
   }
 }
+
+// ── One team's games for the data season ─────────────────────────────────────
+// Two equality-only queries (home side, away side). Equality filters merge
+// existing single-field indexes, so no new composite index is needed.
+export async function fetchTeamSeason(gender, seo) {
+  if (!seo) return []
+  await initSeason()
+  const side = (field) => getDocs(query(collection(db, 'games'),
+    where('gender', '==', gender), where('season', '==', SEASON), where(`${field}.teamSeo`, '==', seo)))
+  try {
+    const [home, away] = await Promise.all([side('home'), side('away')])
+    const seen = new Set()
+    const games = []
+    for (const [snap, isHome] of [[home, true], [away, false]]) {
+      for (const d of snap.docs) {
+        if (!isCanonicalGame(d) || seen.has(d.id)) continue
+        seen.add(d.id)
+        const g = d.data()
+        const ymd = g.gameDate || ''
+        games.push({ id: d.id, ...g, isHome, date: ymd.length === 8 ? `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}` : null })
+      }
+    }
+    return games.sort((a, b) => (a.gameDate + (a.startTimeEpoch || '')).localeCompare(b.gameDate + (b.startTimeEpoch || '')))
+  } catch (err) {
+    console.warn('[CreaseFeed] fetchTeamSeason failed:', err.message)
+    throw err
+  }
+}

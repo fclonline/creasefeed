@@ -35,7 +35,7 @@ const CSS = `
   padding: 12px 32px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0;
 }
 .ob-search {
-  flex: 1; min-width: 200px;
+  flex: 1; min-width: 200px; border-radius: 8px; min-height: 44px;
   background: var(--surface); border: 1px solid var(--border2);
   color: var(--text); padding: 8px 14px;
   font-family: 'Inter',sans-serif; font-size: 14px; outline: none;
@@ -43,34 +43,34 @@ const CSS = `
 }
 .ob-search:focus { border-color: var(--accent); }
 .ob-search::placeholder { color: var(--muted); }
-.ob-filter-group { display: flex; border: 1px solid var(--border2); overflow: hidden; }
+.ob-filter-group { display: flex; border: 1px solid var(--border); border-radius: 10px; padding: 3px; background: var(--surface); overflow: hidden; }
 .ob-filter-btn {
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size:13px;
-  letter-spacing: 1px; text-transform: uppercase; padding: 7px 14px;
-  color: var(--muted); border-right: 1px solid var(--border2); transition: all .15s;
+  font-family: 'Inter', sans-serif; font-weight: 600; font-size:14px;
+  border-radius: 7px; padding: 8px 14px; min-height: 38px;
+  color: var(--cf-text-2); border-right: 0; transition: all .15s;
 }
 .ob-filter-btn:last-child { border-right: none; }
 .ob-filter-btn:hover { color: var(--text); background: var(--surface3); }
-.ob-filter-btn.on { background: var(--accent-bg); color: var(--accent); }
+.ob-filter-btn.on { background: var(--cf-select); color: var(--cf-on-select); }
 .ob-count { font-family: 'Inter',sans-serif; font-size:13px; color: var(--muted); white-space: nowrap; }
 
 .ob-grid-wrap { flex: 1; overflow-y: auto; padding: 20px 32px; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
 .ob-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
 
 .ob-team-card {
-  background: var(--surface); border: 2px solid var(--border);
+  background: var(--surface); border: 2px solid var(--border); border-radius: 12px;
   padding: 14px 16px; cursor: pointer; transition: all .15s;
   display: flex; flex-direction: column; gap: 4px; position: relative;
 }
 .ob-team-card:hover { border-color: var(--border2); background: var(--surface2); }
 .ob-team-card.selected { border-color: var(--accent); background: var(--accent-bg); }
 .ob-team-card.selected.w { border-color: var(--women); background: var(--women-bg); }
-.ob-team-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; line-height: 1.1; }
+.ob-team-name { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 15px; line-height: 1.1; }
 .ob-team-meta { font-family: 'Inter',sans-serif; font-size:13px; color: var(--muted); }
 .ob-team-badges { display: flex; gap: 5px; margin-top: 2px; }
 .ob-badge {
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size:13px;
-  letter-spacing: 1px; text-transform: uppercase; padding: 2px 6px; border: 1px solid;
+  font-family: 'Inter', sans-serif; font-weight: 700; font-size:12px;
+  letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px solid;
 }
 .ob-badge-div { color: var(--muted); border-color: var(--border2); }
 .ob-badge-m   { color: var(--accent); border-color: var(--accent-border); }
@@ -91,7 +91,7 @@ const CSS = `
 .ob-selected-preview { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1; }
 .ob-sel-tag {
   background: var(--surface2); border: 1px solid var(--border2);
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size:13px;
+  font-family: 'Inter', sans-serif; font-weight: 600; font-size:14px; border-radius: 999px;
   padding: 4px 10px; display: flex; align-items: center; gap: 6px; color: var(--text);
 }
 .ob-sel-remove { color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; }
@@ -100,12 +100,12 @@ const CSS = `
 .ob-free-note { font-family: 'Inter',sans-serif; font-size:13px; color: var(--muted); }
 .ob-free-note strong { color: var(--accent); }
 .ob-cta-group { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.ob-skip { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1px; color: var(--muted); padding: 8px 16px; transition: color .15s; }
+.ob-skip { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 15px; min-height: 44px; color: var(--muted); padding: 8px 16px; transition: color .15s; }
 .ob-skip:hover { color: var(--text); }
 .ob-done {
   background: var(--accent); color:var(--cf-on-green);
-  font-family: 'Barlow Condensed', sans-serif; font-weight:800; font-size: 14px;
-  letter-spacing: 2px; text-transform: uppercase; padding: 10px 28px;
+  font-family: 'Barlow Condensed', sans-serif; font-weight:700; font-size: 18px; border-radius: 8px; min-height: 44px;
+  letter-spacing: .05em; text-transform: uppercase; padding: 10px 28px;
   transition: background .15s;
 }
 .ob-done:hover { background: var(--accent-hover); }
@@ -211,8 +211,8 @@ export default function Onboarding({ onDone }) {
               fontSize: 13, color: 'var(--mid)', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
               <span>You've reached the free limit of 2 teams.</span>
-              <span style={{ color: 'var(--accent)', fontFamily: "'Barlow Condensed'", fontWeight: 700, cursor: 'pointer', letterSpacing: '1px' }}>
-                UPGRADE TO PRO FOR UNLIMITED →
+              <span style={{ color: 'var(--accent)', fontWeight: 700, cursor: 'pointer' }}>
+                Upgrade to Pro for unlimited →
               </span>
             </div>
           )}
@@ -253,7 +253,7 @@ export default function Onboarding({ onDone }) {
                   const isW = p?.gender === 'W'
                   return (
                     <div key={id} className="ob-sel-tag">
-                      <span style={{ color: isW ? 'var(--women)' : 'var(--accent)', fontSize: 13, fontFamily: "'Barlow Condensed'", letterSpacing: '1px' }}>
+                      <span style={{ color: isW ? 'var(--women)' : 'var(--accent)', fontSize: 12, fontWeight: 700 }}>
                         {isW ? 'W' : 'M'} D{p?.div}
                       </span>
                       {p?.short || p?.name || id}

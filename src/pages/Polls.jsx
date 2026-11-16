@@ -83,7 +83,7 @@ export default function PollsPage({ gender, division, isW }) {
             {t.label}
           </button>
         ))}
-        <div style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed'", fontSize: 13, color: 'var(--muted)', letterSpacing: '1px' }}>
+        <div className="page-meta">
           {gender === 'M' ? "Men's" : "Women's"} · D{div} · 2026 Season
         </div>
       </div>
@@ -96,7 +96,7 @@ export default function PollsPage({ gender, division, isW }) {
 
       {/* loading */}
       {loading && (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)', fontFamily: "'Barlow Condensed'", fontSize: 16 }}>
+        <div className="empty-note" style={{ padding: '60px 20px' }}>
           Loading polls...
         </div>
       )}

@@ -935,3 +935,114 @@ h1, h2, h3 { color: var(--text); }
   .fp-bar { bottom:calc(56px + 15px + env(safe-area-inset-bottom)); }
   .fp.has-bar { padding-bottom:180px; }
 }
+
+/* ══ PHASE 6: LEGACY PAGE SWEEP ═════════════════════════════════════════════
+   Brings Stats, Teams, team detail, Schedule, Polls, the game modal and the
+   user menu onto the brand rules (docs/mockups/Brand.dc.html):
+   Barlow Condensed = headlines, scores, nav. Inter = body, team names, stats,
+   labels (13px+, dark gray), buttons, tabs, table headers. Pills = Inter 700
+   12px. Cards are white on ground with rounded corners; no colored side bars. */
+
+/* table headers: Inter, sentence case, no tracking */
+.lb-table thead th, .teams-table th, .team-sched-table th, .polls-table th, .pstats-table th {
+  font-family:'Inter',sans-serif; font-weight:600; font-size:13px; letter-spacing:0; text-transform:none; color:var(--muted);
+}
+.lb-table thead th.sorted-m, .lb-table thead th.sorted-w { color:var(--text); }
+
+/* team + player names: Inter */
+.lb-name, .teams-name, .team-sched-opp, .polls-team, .sched-team, .play-team, .user-dropdown-name {
+  font-family:'Inter',sans-serif; font-weight:600; font-size:15px; letter-spacing:0;
+}
+.pstats-name { font-family:'Inter',sans-serif !important; font-weight:600; font-size:14px !important; }
+.pstats-team-name { font-family:'Inter',sans-serif; font-weight:700; font-size:16px; letter-spacing:0; }
+.msb-school { font-family:'Inter',sans-serif; font-weight:700; font-size:22px; letter-spacing:0; }
+.msb-vs { color:var(--muted); }
+.qc.lbl { font-family:'Inter',sans-serif; font-weight:600; }
+.lb-table td { font-size:14px; }
+.lb-school, .lb-rank { font-size:14px; color:var(--cf-text-2); }
+
+/* small labels */
+.tstat-label, .team-stat-label, .pstats-goalie-label, .modal-crumb, .sched-day-name, .auth-divider span {
+  font-family:'Inter',sans-serif; font-weight:600; font-size:13px; letter-spacing:0; text-transform:none; color:var(--muted);
+}
+.team-header-conf { font-family:'Inter',sans-serif; font-weight:600; font-size:14px; letter-spacing:0; color:var(--cf-text-2); }
+.team-header-state { font-size:14px; }
+
+/* section labels: condensed headline style, not tiny tracked caps */
+.sched-day-header, .sched-selected-label {
+  font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; letter-spacing:.04em; color:var(--text);
+}
+.teams-conf-name { letter-spacing:.02em; }
+
+/* pills + badges */
+.lb-pos, .team-badge, .teams-gender-badge, .team-result-badge, .sched-conf-badge, .sched-gender-badge, .user-dropdown-pro {
+  font-family:'Inter',sans-serif; font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+}
+.lb-pos { border-radius:6px; padding:2px 7px; color:var(--cf-text-2); }
+.team-badge, .team-result-badge { border-radius:999px; padding:4px 10px; }
+.team-result-badge.upcoming { font-family:'Inter',sans-serif; font-size:12px; border-radius:999px; }
+.sched-conf-badge { color:var(--muted); }
+
+/* tabs as buttons (Stats boards, Polls sources, Schedule months): segmented look */
+.stat-tab, .sched-month-btn {
+  font-family:'Inter',sans-serif; font-weight:600; font-size:15px; letter-spacing:0; text-transform:none;
+  min-height:44px; padding:10px 16px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--cf-text-2);
+}
+.stat-tab:hover, .sched-month-btn:hover { color:var(--text); border-color:var(--border2); }
+.stat-tab.active-m, .stat-tab.active-w, .sched-month-btn.active-m, .sched-month-btn.active-w {
+  background:var(--cf-select); border-color:var(--cf-select); color:var(--cf-on-select); font-weight:700;
+}
+.stats-tabs { gap:6px; }
+.sched-today-btn, .sched-today-btn.w { font-family:'Inter',sans-serif; font-weight:600; font-size:14px; min-height:44px; padding:10px 14px; border-radius:8px; color:var(--accent); border-color:var(--accent); }
+.sched-day-btn { border-radius:8px; }
+.sched-day-btn.active-m, .sched-day-btn.active-w { background:var(--cf-select); border-color:var(--cf-select); }
+.sched-day-btn.active-m .sched-day-name, .sched-day-btn.active-m .sched-day-num,
+.sched-day-btn.active-w .sched-day-name, .sched-day-btn.active-w .sched-day-num { color:var(--cf-on-select); }
+
+/* underline tabs (team page, game modal) */
+.team-tab, .modal-tab {
+  font-family:'Inter',sans-serif; font-weight:600; font-size:15px; letter-spacing:0; text-transform:none; color:var(--cf-text-2); min-height:44px;
+}
+.team-tab:hover, .modal-tab:hover { color:var(--text); }
+.team-tab.active-m, .team-tab.active-w { color:var(--text); border-bottom-color:var(--accent); font-weight:700; }
+
+/* buttons */
+.team-back-btn { font-family:'Inter',sans-serif; font-weight:600; font-size:14px; letter-spacing:0; color:var(--cf-text-2); min-height:44px; }
+.team-follow-btn-lg, .teams-follow-btn {
+  font-family:'Inter',sans-serif; font-weight:700; letter-spacing:0; text-transform:none;
+  border:1px solid var(--cf-chip-line, var(--border2)); background:var(--surface); color:var(--text); border-radius:8px;
+}
+.team-follow-btn-lg { font-size:15px; min-height:44px; padding:10px 18px; min-width:120px; }
+.teams-follow-btn { font-size:13px; padding:6px 12px; }
+.team-follow-btn-lg:hover, .teams-follow-btn:hover, .team-follow-btn-lg.w:hover, .teams-follow-btn.w:hover { border-color:var(--accent); color:var(--accent); }
+.team-follow-btn-lg.following, .teams-follow-btn.following, .team-follow-btn-lg.w.following, .teams-follow-btn.w.following {
+  background:var(--accent); border-color:var(--accent); color:var(--cf-on-green);
+}
+.dropdown-item { font-family:'Inter',sans-serif; font-weight:500; font-size:14px; letter-spacing:0; color:var(--cf-text-2); }
+.user-dropdown { border-radius:12px; overflow:hidden; }
+.user-avatar { font-family:'Inter',sans-serif; font-weight:700; font-size:13px; }
+
+/* cards: rounded, no side bars */
+.team-header { border-left:1px solid var(--border); border-radius:14px; }
+.team-header-name { letter-spacing:.01em; }
+.leaderboard, .team-stat-card, .polls-table-wrap { border-radius:14px; }
+.leaderboard, .polls-table-wrap { background:var(--surface); border:1px solid var(--border); overflow:hidden; overflow-x:auto; }
+.lb-table thead th { background:var(--surface); }
+.teams-conf-header { border-radius:10px; }
+.teams-conf-group { margin-bottom:6px; }
+.sched-card, .sched-card.live, .sched-card.live.w, .sched-card.final { border-left-width:1px; border-left-color:var(--border); border-radius:12px; margin-bottom:6px; }
+.sched-card.live, .sched-card.live.w { border-color:var(--cf-live); }
+.sched-time.live, .sched-time.live.w { color:var(--cf-live); }
+.polls-rank { border-radius:6px; }
+.polls-empty { border-radius:14px; }
+.polls-empty-title { color:var(--text); }
+
+/* meta lines + empty states that used condensed inline styles */
+.page-meta { margin-left:auto; font-size:14px; font-weight:500; color:var(--cf-text-2); }
+.empty-note { text-align:center; padding:40px 20px; color:var(--cf-text-2); font-size:15px; }
+.empty-title { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:24px; color:var(--text); margin-bottom:8px; }
+.teams-search { border-radius:8px; min-height:44px; }
+/* scores use the headline face, like game cards */
+.msb-score { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:60px; }
+.sched-team-score { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:22px; }
+@media(max-width:768px) { .msb-score { font-size:46px; } }

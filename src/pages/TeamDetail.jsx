@@ -4,97 +4,35 @@ import { FOLLOW_LIMIT_NOTE, SAVE_FOLLOWS_NOTE } from '../config/pro.js'
 import { useTeams } from '../hooks/useTeams.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { GameModal, chip, ac } from '../components/shared.jsx'
-import * as NCAA from '../api/ncaa.js'
+import { fetchTeamSeason } from '../api/firestore.js'
+import { PROGRAM_SEO } from '../data/teamColors.js'
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
-// Fetch all games for a team across the season (Feb-May) by scanning the NCAA scoreboard
+// A team's games for the data season, from Firestore (/games by teamSeo).
 function useTeamSchedule(program) {
   const [games, setGames]     = useState([])
   const [loading, setLoading] = useState(true)
-
+  const [error, setError]     = useState(false)
   useEffect(() => {
     if (!program) return
     let cancelled = false
-
-    async function fetchSeason() {
-      setLoading(true)
-      const allGames = []
-      const gender = program.gender
-      const div = parseInt(program.div, 10)
-      const teamName = program.name.toLowerCase()
-      const teamShort = program.short.toLowerCase()
-
-      // Scan Feb through May (months 2-5)
-      for (let month = 2; month <= 5; month++) {
-        // Get which dates have games this month
-        try {
-          const calendar = await NCAA.fetchScheduleCalendar(gender, month, div)
-          if (!calendar || calendar.length === 0) continue
-
-          // For each date with games, fetch the scoreboard and filter for our team
-          for (const entry of calendar) {
-            if (!entry.date) continue
-            try {
-              // Convert NCAA date format (MM/DD/YYYY) to YYYYMMDD
-              const parts = entry.date.split('/')
-              if (parts.length !== 3) continue
-              const dateParam = `${parts[2]}${parts[0].padStart(2,'0')}${parts[1].padStart(2,'0')}`
-
-              const dayGames = await NCAA.fetchScoreboard(gender, dateParam, div)
-              if (cancelled) return
-
-              // Filter games involving this team
-              const teamGames = dayGames.filter(g => {
-                const home = g.home.name.toLowerCase()
-                const away = g.away.name.toLowerCase()
-                return home.includes(teamShort) || home.includes(teamName) ||
-                       away.includes(teamShort) || away.includes(teamName)
-              })
-
-              // Add date to each game for display
-              teamGames.forEach(g => {
-                if (!g.date) g.date = `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`
-              })
-
-              allGames.push(...teamGames)
-            } catch {
-              // Skip dates that fail
-            }
-          }
-        } catch {
-          // Skip months that fail
-        }
-      }
-
-      if (!cancelled) {
-        // Deduplicate by game ID
-        const seen = new Set()
-        const unique = allGames.filter(g => {
-          if (seen.has(g.id)) return false
-          seen.add(g.id)
-          return true
-        })
-        // Sort by date
-        unique.sort((a, b) => (a.date || '').localeCompare(b.date || ''))
-        setGames(unique)
-        setLoading(false)
-      }
-    }
-
-    fetchSeason()
+    setLoading(true); setError(false)
+    fetchTeamSeason(program.gender, PROGRAM_SEO[program.id])
+      .then(list => { if (!cancelled) setGames(list) })
+      .catch(() => { if (!cancelled) { setGames([]); setError(true) } })
+      .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [program?.id])
-
-  return { games, loading }
+  return { games, loading, error }
 }
 
 export default function TeamDetailPage({ teamId, isW, onBack, onAuthClick }) {
   const program = getProgramById(teamId)
   const { user } = useAuth()
   const { followTeam, unfollowTeam, isFollowing } = useTeams()
-  const { games, loading } = useTeamSchedule(program)
+  const { games, loading, error } = useTeamSchedule(program)
   const [selectedId, setSelectedId] = useState(null)
   const [activeTab, setActiveTab] = useState('schedule')
   const ac_ = chip(isW)
@@ -119,8 +57,8 @@ export default function TeamDetailPage({ teamId, isW, onBack, onAuthClick }) {
     const teamName = program.name.toLowerCase()
     games.forEach(g => {
       if (g.status !== 'final') return
-      const isHome = g.home.name.toLowerCase().includes(teamShort) || g.home.name.toLowerCase().includes(teamName)
-      const isAway = g.away.name.toLowerCase().includes(teamShort) || g.away.name.toLowerCase().includes(teamName)
+      const isHome = g.isHome ?? (g.home.name.toLowerCase().includes(teamShort) || g.home.name.toLowerCase().includes(teamName))
+      const isAway = g.isHome != null ? !g.isHome : (g.away.name.toLowerCase().includes(teamShort) || g.away.name.toLowerCase().includes(teamName))
       if (!isHome && !isAway) return
 
       const teamScore = isHome ? g.home.score : g.away.score
@@ -140,7 +78,7 @@ export default function TeamDetailPage({ teamId, isW, onBack, onAuthClick }) {
     const teamName = program.name.toLowerCase()
     games.forEach(g => {
       if (g.status !== 'final') return
-      const isHome = g.home.name.toLowerCase().includes(teamShort) || g.home.name.toLowerCase().includes(teamName)
+      const isHome = g.isHome ?? (g.home.name.toLowerCase().includes(teamShort) || g.home.name.toLowerCase().includes(teamName))
       if (isHome) {
         goalsFor += (g.home.score || 0)
         goalsAgainst += (g.away.score || 0)
@@ -178,7 +116,7 @@ export default function TeamDetailPage({ teamId, isW, onBack, onAuthClick }) {
       <button className="team-back-btn" onClick={onBack}>← Back to Teams</button>
 
       {/* Team header */}
-      <div className="team-header" style={{ borderLeftColor: accentColor }}>
+      <div className="team-header">
         <div className="team-header-info">
           <div className="team-header-name">{program.name}</div>
           <div className="team-header-meta">
@@ -228,8 +166,8 @@ export default function TeamDetailPage({ teamId, isW, onBack, onAuthClick }) {
             </div>
           )}
           {!loading && games.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)', fontFamily: "'Barlow Condensed'" }}>
-              No games found for {program.name} this season.
+            <div className="empty-note">
+              {error ? 'Couldn\u2019t load games. Refresh to try again.' : `No games found for ${program.name} this season.`}
             </div>
           )}
           {!loading && games.length > 0 && (
@@ -246,7 +184,7 @@ export default function TeamDetailPage({ teamId, isW, onBack, onAuthClick }) {
                 {games.map(g => {
                   const teamShort = program.short.toLowerCase()
                   const teamName = program.name.toLowerCase()
-                  const isHome = g.home.name.toLowerCase().includes(teamShort) || g.home.name.toLowerCase().includes(teamName)
+                  const isHome = g.isHome ?? (g.home.name.toLowerCase().includes(teamShort) || g.home.name.toLowerCase().includes(teamName))
                   const opponent = isHome ? g.away : g.home
                   const teamScore = isHome ? g.home.score : g.away.score
                   const oppScore = isHome ? g.away.score : g.home.score
@@ -298,8 +236,8 @@ export default function TeamDetailPage({ teamId, isW, onBack, onAuthClick }) {
               Loading stats...
             </div>
           ) : games.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)', fontFamily: "'Barlow Condensed'" }}>
-              No stats available yet.
+            <div className="empty-note">
+              {error ? 'Couldn\u2019t load stats. Refresh to try again.' : 'No stats available yet.'}
             </div>
           ) : (
             <div className="team-stats-grid">

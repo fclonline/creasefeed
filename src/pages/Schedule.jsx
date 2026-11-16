@@ -286,7 +286,7 @@ export default function SchedulePage({ gender, division, isW }) {
           textAlign: 'center', padding: '60px 20px',
           border: '1px dashed var(--border2)', margin: '20px 0',
         }}>
-          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 22, marginBottom: 8, color: 'var(--muted)' }}>
+          <div className="empty-title">
             NO GAMES
           </div>
           <div style={{ fontFamily: "'Inter'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>

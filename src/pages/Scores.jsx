@@ -16,7 +16,7 @@ function LoadError({ error }) {
 
 function GameSkeleton() {
   return (
-    <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderLeft:'3px solid var(--border)',padding:'13px 16px 13px 18px',marginBottom:2}}>
+    <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'14px 18px',marginBottom:8}}>
       <style>{`@keyframes pulse-sk{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
       {[0,1].map(i=>(
         <div key={i} style={{display:'flex',gap:10,marginBottom:i===0?8:0,alignItems:'center'}}>

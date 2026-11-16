@@ -195,7 +195,7 @@ export default function TeamsPage({ gender, division, isW, onAuthClick, onSelect
       })}
 
       {programs.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)', fontFamily: "'Barlow Condensed'", fontSize: 16 }}>
+        <div className="empty-note" style={{ padding: '60px 20px' }}>
           No programs match your filters.
         </div>
       )}
