@@ -83,8 +83,8 @@ export function TeamsProvider({ children }) {
         writePending([])
         setPending([])
         setMergeOverflow(left)
+        setFollowedTeams(merged)
         if (Object.keys(merged).length !== Object.keys(existing).length) {
-          setFollowedTeams(merged)
           updateDoc(ref, { followedTeams: merged, onboardingDone: true })
             .catch(err => console.warn('[CreaseFeed] follow merge failed:', err.message))
           setIsNewUser?.(false)

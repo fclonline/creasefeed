@@ -35,7 +35,9 @@ export default function App() {
   const closeAuth = () => { setAuthMode(null); setAuthNote('') }
 
   // Show onboarding when user is new or explicitly editing teams
-  const shouldOnboard = (user && isNewUser) || showOnboarding
+  // New accounts that arrive with teams already picked (merged from
+  // cf_pending_follows) skip the onboarding picker.
+  const shouldOnboard = (user && isNewUser && followedList.length === 0) || showOnboarding
 
   const handleOnboardingDone = () => {
     setIsNewUser(false)
@@ -61,7 +63,7 @@ export default function App() {
       <ContextBar page={page} gender={gender} setGender={setGender} division={division} setDivision={setDivision} isW={isW} />
 
       <main style={{ flex: 1 }}>
-        {page === 'feed'     && <MyFeedPage   isW={isW} onEditTeams={() => setShowOnboarding(true)} onAuthClick={openAuth} />}
+        {page === 'feed'     && <MyFeedPage   isW={isW} gender={gender} division={division} onEditTeams={() => setShowOnboarding(true)} onAuthClick={openAuth} />}
         {page === 'scores'   && <ScoresPage   gender={gender} division={division} setGender={setGender} setDivision={setDivision} setPage={(p) => { setPage(p); setSelectedTeamId(null) }} isW={isW} onAuthClick={openAuth} />}
         {page === 'stats'    && <StatsPage    gender={gender} division={division} isW={isW} onSelectTeam={navigateToTeamDetail} />}
         {page === 'schedule' && <SchedulePage gender={gender} division={division} isW={isW} />}

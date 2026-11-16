@@ -448,16 +448,18 @@ export async function fetchGameById(id) {
 
 // ── Most recent final + next scheduled game for one team ──────────────────────
 // For the My Feed preview. `seo` is the NCAA team slug on game docs.
-const hasTeam = (g, seo) => g.away?.teamSeo === seo || g.home?.teamSeo === seo
-export async function fetchTeamGames(gender, div, seo) {
-  if (!seo) return { last: null, next: null }
+// `match` is either the team's seo slug or a predicate over a game side.
+export async function fetchTeamGames(gender, div, match) {
+  if (!match) return { last: null, next: null }
+  const isTeam = typeof match === 'function' ? match : (t) => t?.teamSeo === match
+  const hasTeam = (g) => isTeam(g.away) || isTeam(g.home)
   try {
-    const last = await walkFinals(gender, div, finals => finals.find(g => hasTeam(g, seo)) || null)
+    const last = await walkFinals(gender, div, finals => finals.find(hasTeam) || null)
     const today = new Date()
     const upcoming = await fetchChunk(gender, div, new Date(today.getFullYear(), today.getMonth(), today.getDate() + 29))
     const todayYmd = toYmd(today)
     const next = upcoming
-      .filter(g => g.status !== 'final' && g.gameDate >= todayYmd && hasTeam(g, seo))
+      .filter(g => g.status !== 'final' && g.gameDate >= todayYmd && hasTeam(g))
       .sort((a, b) => byNewest(b, a))[0] || null
     return { last, next }
   } catch (err) {

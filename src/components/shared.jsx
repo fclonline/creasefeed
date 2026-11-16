@@ -325,6 +325,7 @@ export function ContextBar({ page, gender, setGender, division, setDivision, isW
   // The off-season home carries its own segmented toggles.
   const season = useSeasonState()
   if (page === 'scores' && season && !season.loading && season.offseason) return null
+  if (page === 'feed') return null // My Feed has its own team filters
   const showGender   = !HIDE_GENDER_ON.includes(page)
   const showDivision = !HIDE_DIVISION_ON.includes(page)
   return (

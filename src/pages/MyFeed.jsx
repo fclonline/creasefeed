@@ -3,6 +3,7 @@ import { useTeams, ALERT_LEVELS, ALERT_LABELS } from '../hooks/useTeams.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useScores } from '../hooks/useScores.jsx'
 import { GameCard, GameModal, ac } from '../components/shared.jsx'
+import FeedPicker from '../components/FeedPicker.jsx'
 
 const CSS = `
 /* ── MY FEED ── */
@@ -51,7 +52,7 @@ const CSS = `
 }
 `
 
-export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
+export default function MyFeedPage({ onEditTeams, onAuthClick, isW, gender, division }) {
   const { user, pro } = useAuth()
   const { followedList, followedTeams, unfollowTeam, setAlertLevel, isFollowing } = useTeams()
   const [selectedId, setSelectedId] = useState(null)
@@ -61,17 +62,9 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
   const { games: mensGames } = useScores('M')
   const { games: womensGames } = useScores('W')
 
-  if (!user) {
-    return (
-      <>
-        <style>{CSS}</style>
-        <div style={{ padding: '80px 28px', textAlign: 'center' }}>
-          <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 800, fontSize: 28, marginBottom: 8 }}>Sign in to see your feed</div>
-          <div style={{ fontFamily: "'Inter'", fontSize: 14, color: 'var(--mid)', marginBottom: 24 }}>Follow your teams and get personalized alerts.</div>
-          <button className="myfeed-empty-cta" onClick={() => onAuthClick('signin')}>Sign In →</button>
-        </div>
-      </>
-    )
+  // Signed out (or signed in with nothing followed): teams-first picker.
+  if (!user || followedList.length === 0) {
+    return <FeedPicker gender={gender} division={division} onAuthClick={onAuthClick} />
   }
 
   // get all games across both genders from real data sources
