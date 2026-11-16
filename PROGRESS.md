@@ -12,6 +12,7 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 
 - [ ] **Team colors review** — Deemer marks up `docs/team-colors-review.xlsx` (Correct / Fix per school, 143 rows) and sends it back; Claude applies fixes to `src/data/teamColors.js`.
 - [ ] **Sign-up test** — a team member, private window, no refresh partway: follow 2 teams signed out on My Feed → create an account from the pop-up → both teams appear in the feed and in `users/{uid}.followedTeams`. Also: an existing account signing in keeps its teams, no duplicates.
+- [ ] **Season toggle (2026 vs 2027)** — add a season switch so past-season entries (2026) stay separate from the upcoming season (2027). Default to the current/upcoming season; 2026 stays one tap away for reference since we keep the data. Applies to Scores, Schedule, Stats, Polls, and team pages (records, results). Today every page reads one data season from `/config/site` (set by `aggregateRecords`), so this needs a season picker in the frontend queries — and 2027 data starting to arrive (schedule scraper) is what makes it necessary.
 - [ ] **Schedule scraper** — scrape posted 2027 schedules from school athletics sites (NCAA feed has no 2027 games yet). Accuracy check: the 7 openers Deemer posted from Inside Lacrosse — M: UMass Lowell @ Iona Jan 30; Army @ UMass, Mercer @ Hampton Feb 6. W: Temple @ Delaware, UC Davis @ USC Feb 5; Colorado @ Holy Cross, Mercer @ South Florida Feb 6.
 
 ---
