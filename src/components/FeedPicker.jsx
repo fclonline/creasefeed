@@ -58,7 +58,6 @@ function useFeedPreview(programs) {
 
 function FeedPreview({ programs }) {
   const { loading, rows } = useFeedPreview(programs)
-  const opens = seasonStartLabel()
   return (
     <section className="fp-preview" aria-live="polite" aria-busy={loading}>
       <h2>Your feed preview</h2>
@@ -87,7 +86,7 @@ function FeedPreview({ programs }) {
             <div key={i} className="fp-prev-row">
               <span className="fp-prev-tag">NEXT</span>
               <span className="fp-prev-main">{r.program.name}</span>
-              <span className="fp-prev-date">{opens ? `Season starts ${opens}` : 'Schedule coming soon'}</span>
+              <span className="fp-prev-date">{seasonStartLabel(r.program.gender) ? `Season starts ${seasonStartLabel(r.program.gender)}` : 'Schedule coming soon'}</span>
             </div>
           )
         })}

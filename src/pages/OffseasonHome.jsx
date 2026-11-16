@@ -92,8 +92,8 @@ export default function OffseasonHome({ gender, setGender, division, setDivision
   const meta = useTeamMeta(gender, division)
   const { isFollowing, toggleFollow } = useTeams()
   const [modal, setModal] = useState(null) // null | 'summary' | 'box score'
-  const days = daysUntilSeason()
-  const opens = seasonStartLabel()
+  const days = daysUntilSeason(gender)
+  const opens = seasonStartLabel(gender)
 
   const follow = async (programId) => {
     const r = await toggleFollow(programId)

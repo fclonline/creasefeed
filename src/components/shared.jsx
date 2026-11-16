@@ -51,7 +51,7 @@ export function finalLine(g) {
 // next 3 days). Static band: Off-season pill, last final, season-open date.
 function OffseasonTicker({ gender, division }) {
   const { game, isChampionship } = useLastFinal(gender, division)
-  const opens = seasonStartLabel()
+  const opens = seasonStartLabel(gender)
   const f = game ? finalLine(game) : null
   const dataYear = game?.season || ''
   return (
