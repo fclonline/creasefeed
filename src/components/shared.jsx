@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useTheme } from '../hooks/useTheme.jsx'
 import { Lockup, Wordmark } from './Brand.jsx'
+import TeamChip from './TeamChip.jsx'
+import { useTeamMeta } from '../hooks/useTeamMeta.jsx'
 import { useGameDetail } from '../hooks/useScores.jsx'
 import { useSeasonState, useLastFinal } from '../hooks/useSeasonState.jsx'
 import { SEASON_YEAR, seasonStartLabel } from '../config/season.js'
@@ -75,6 +77,8 @@ function OffseasonTicker({ gender, division }) {
 export function Ticker({ gender, division, isW }) {
   const season = useSeasonState()
   const games = season?.tickerGames || []
+  const meta = useTeamMeta(gender, division)
+  const label = (t) => [meta.rankFor(t), t.name.toUpperCase(), meta.recordFor(t)].filter(Boolean).join(' ')
 
   if (season?.loading) return <div className="ticker-root" aria-hidden="true" />
   if (games.length === 0) return <OffseasonTicker gender={gender} division={division} />
@@ -84,9 +88,9 @@ export function Ticker({ gender, division, isW }) {
     .map(g => {
       const isUpcoming = g.status === 'upcoming'
       const text = isUpcoming
-        ? `${g.away.name.toUpperCase()} @ ${g.home.name.toUpperCase()}`
-        : `${g.away.name.toUpperCase()} ${g.away.score ?? ''} · ${g.home.name.toUpperCase()} ${g.home.score ?? ''}`
-      return { text, period: isUpcoming ? (g.time || g.period || '') : g.period, live: g.status === 'live' }
+        ? `${label(g.away)} @ ${label(g.home)}`
+        : `${label(g.away)} ${g.away.score ?? ''} · ${label(g.home)} ${g.home.score ?? ''}`
+      return { text, period: g.status === 'live' ? '' : statusText(g), live: g.status === 'live', liveText: g.status === 'live' ? statusText(g) : '' }
     })
 
   const doubled = [...tickerItems, ...tickerItems]
@@ -103,7 +107,7 @@ export function Ticker({ gender, division, isW }) {
         <div className="ticker-track" style={{ animationDuration: `${scrollSeconds}s` }}>
           {doubled.map((item, i) => (
             <div key={i} className="ticker-item" aria-hidden={i >= tickerItems.length ? 'true' : undefined}>
-              {item.live && <span className="t-live">LIVE</span>}
+              {item.live && <span className="t-live">{item.liveText}</span>}
               <span>{item.text}</span>
               <span className="t-period">{item.period}</span>
             </div>
@@ -344,45 +348,70 @@ export function ContextBar({ page, gender, setGender, division, setDivision, isW
   )
 }
 
+// ─── STATUS BADGE ────────────────────────────────────────────────────────────
+// Live: --cf-live with clock ("LIVE · Q3 4:12"). Final: ink "FINAL". Upcoming:
+// gray time badge. The live color is used nowhere else.
+export function statusText(game) {
+  if (game.status === 'live') return ['LIVE', [game.period, game.clock].filter(Boolean).join(' ')].filter(Boolean).join(' · ')
+  if (game.status === 'final') return /^FINAL/i.test(game.period || '') ? game.period.toUpperCase() : 'FINAL'
+  return game.time || game.period || 'TBA'
+}
+export function StatusBadge({ game }) {
+  return (
+    <span className={`gc-status ${game.status}`}>
+      {game.status === 'live' && <span className="live-dot" aria-hidden="true" />}
+      {statusText(game)}
+    </span>
+  )
+}
+
+// Quarter-by-quarter scores when the game doc carries them; otherwise null and
+// the columns are omitted. (NCAA game docs don't have line scores yet.)
+const lineScores = (t) => Array.isArray(t?.linescores) && t.linescores.length ? t.linescores : null
+
 // ─── GAME CARD ───────────────────────────────────────────────────────────────
 export function GameCard({ game, onClick, isW, showGender = false }) {
+  const meta = useTeamMeta(game.gender, game.div)
   const hasScore = game.status !== 'upcoming'
   const awayWin  = hasScore && game.away.score > game.home.score
+  const showQ = hasScore && lineScores(game.away) && lineScores(game.home)
+  const nQ = showQ ? Math.max(lineScores(game.away).length, lineScores(game.home).length) : 0
   return (
-    <div className={`game-card ${game.status} ${isW ? 'w' : ''}`} onClick={onClick}>
+    <button type="button" className={`game-card ${game.status}`} onClick={onClick}>
       <div className="gc-meta">
-        <div className={`gc-status ${game.status} ${isW ? 'w' : ''}`}>
-          {game.status === 'live' && <span className={`live-dot ${isW ? 'w' : ''}`} />}
-          {game.status === 'upcoming' ? (game.time || game.period || 'TBA') : game.period}
-        </div>
+        <StatusBadge game={game} />
         {showGender && (
-          <span className={`gc-gender ${isW ? 'w' : 'm'}`}>{isW ? "Women's" : "Men's"}</span>
+          <span className="gc-gender">{isW ? "Women's" : "Men's"}</span>
         )}
-        <div className="gc-conf">{game.conf}</div>
       </div>
       <div className="gc-teams">
+        {showQ && (
+          <div className="gc-team-row gc-q-head" aria-hidden="true">
+            <span className="gc-name-wrap" />
+            {Array.from({ length: nQ }, (_, i) => <span key={i} className="gc-q">{i + 1}</span>)}
+            <span className="gc-score-h">T</span>
+          </div>
+        )}
         {[{ t: game.away, isAway: true }, { t: game.home, isAway: false }].map(({ t, isAway }, idx) => {
-          const wins  = hasScore && (isAway ? awayWin : !awayWin)
           const loses = hasScore && (isAway ? !awayWin : awayWin)
+          const rank = meta.rankFor(t)
+          const rec = meta.recordFor(t)
           return (
             <div key={idx} className="gc-team-row">
-              <div className="gc-rank">{t.rank ? `#${t.rank}` : ''}</div>
-              <div className="gc-name-wrap">
+              <span className="gc-name-wrap">
+                <TeamChip seo={t.teamSeo} name={t.name} size={28} />
+                {rank && <span className="gc-rank">{rank}</span>}
                 <span className={`gc-name ${loses ? 'dim' : ''}`}>{t.name}</span>
-                <span className={isAway ? 'away-tag' : `home-tag ${isW ? 'w' : ''}`}>{isAway ? 'AWAY' : 'HOME'}</span>
-              </div>
-              <div className="gc-rec">{t.rec}</div>
-              {hasScore && (
-                <div className={`gc-score ${loses ? 'dim' : ''}`} style={wins ? { color: ac(isW) } : {}}>
-                  {t.score}
-                </div>
-              )}
+                {rec && <span className="gc-rec">{rec}</span>}
+              </span>
+              {showQ && Array.from({ length: nQ }, (_, i) => <span key={i} className="gc-q">{lineScores(t)[i] ?? ''}</span>)}
+              {hasScore && <span className={`gc-score ${loses ? 'dim' : ''}`}>{t.score}</span>}
             </div>
           )
         })}
       </div>
-      {!hasScore && <div className="gc-footer">{game.loc}</div>}
-    </div>
+      {!hasScore && game.loc && <div className="gc-footer">{game.loc}</div>}
+    </button>
   )
 }
 

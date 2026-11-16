@@ -878,3 +878,24 @@ h1, h2, h3 { color: var(--text); }
   .oh-grid { grid-template-columns:1fr; }
   .oh-start { padding:20px; }
 }
+
+/* ══ PHASE 4: SCORE CARDS ═══════════════════════════════════════════════════ */
+.game-card { display:block; width:100%; text-align:left; color:var(--text); font:inherit; }
+.game-card:hover { border-color:var(--border2); background:var(--surface); box-shadow:0 1px 4px rgba(14,26,43,.08); }
+.gc-meta { gap:8px; margin-bottom:12px; }
+.gc-gender { margin-left:auto; font-family:'Inter',sans-serif; font-size:12px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--cf-text-2); border:1px solid var(--border); border-radius:999px; padding:2px 8px; background:transparent; }
+.gc-teams { gap:8px; }
+.gc-team-row { display:flex; align-items:center; gap:6px; }
+.gc-name-wrap { flex:1; min-width:0; display:flex; align-items:center; gap:8px; }
+.gc-rank { width:auto; min-width:14px; text-align:left; font-size:13px; color:var(--muted); font-family:'Inter',sans-serif; }
+.gc-name { font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gc-name.dim { color:var(--cf-text-2); font-weight:500; }
+.gc-rec { font-size:13px; color:var(--muted); font-family:'Inter',sans-serif; }
+.gc-q, .gc-score-h { width:28px; text-align:center; font-size:13px; color:var(--cf-text-2); flex-shrink:0; }
+.gc-score-h { width:40px; text-align:right; color:var(--muted); }
+.gc-q-head .gc-q { color:var(--muted); }
+.gc-score { min-width:40px; }
+.gc-score.dim { color:var(--muted); }
+.gc-status { display:inline-flex; align-items:center; gap:6px; }
+.live-dot { width:7px; height:7px; animation:none; }
+@media(max-width:420px) { .gc-rec { display:none; } }

@@ -4,8 +4,7 @@
 // Both are optional: callers render nothing when a lookup misses.
 // ============================================================================
 import { useEffect, useMemo, useState } from 'react'
-import { fetchTeamRecords } from '../api/firestore.js'
-import { useStandings } from './useScores.jsx'
+import { fetchTeamRecords, fetchStandings } from '../api/firestore.js'
 import { canonTeam, seoKey } from '../data/programs.js'
 
 const recordCache = new Map()
@@ -14,14 +13,25 @@ function recordsFor(gender) {
   return recordCache.get(gender)
 }
 
-export function useTeamMeta(gender, division) {
-  const { standings } = useStandings(gender, division)
+// Poll rows per gender + division, shared by every card on the page.
+const pollCache = new Map()
+function pollFor(gender, division) {
+  const key = `${gender}|${division}`
+  if (!pollCache.has(key)) pollCache.set(key, fetchStandings(gender, division).then(d => d?.rows || []))
+  return pollCache.get(key)
+}
+
+export function useTeamMeta(gender, division = '1') {
+  const div = String(division || '1')
+  const [standings, setStandings] = useState([])
   const [records, setRecords] = useState({})
   useEffect(() => {
     let cancelled = false
+    if (!gender) return
     recordsFor(gender).then(r => { if (!cancelled) setRecords(r || {}) })
+    pollFor(gender, div).then(rows => { if (!cancelled) setStandings(rows) })
     return () => { cancelled = true }
-  }, [gender])
+  }, [gender, div])
 
   return useMemo(() => {
     const ranks = {}
