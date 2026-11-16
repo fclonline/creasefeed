@@ -8,6 +8,26 @@ Share this doc with Claude Code or Claude Cowork to bring them up to speed quick
 
 ---
 
+## Open to-do (running list — check off and move to the log when done)
+
+- [ ] **Team colors review** — Deemer marks up `docs/team-colors-review.xlsx` (Correct / Fix per school, 143 rows) and sends it back; Claude applies fixes to `src/data/teamColors.js`.
+- [ ] **Sign-up test** — a team member, private window, no refresh partway: follow 2 teams signed out on My Feed → create an account from the pop-up → both teams appear in the feed and in `users/{uid}.followedTeams`. Also: an existing account signing in keeps its teams, no duplicates.
+- [ ] **Schedule scraper** — scrape posted 2027 schedules from school athletics sites (NCAA feed has no 2027 games yet). Accuracy check: the 7 openers Deemer posted from Inside Lacrosse — M: UMass Lowell @ Iona Jan 30; Army @ UMass, Mercer @ Hampton Feb 6. W: Temple @ Delaware, UC Davis @ USC Feb 5; Colorado @ Holy Cross, Mercer @ South Florida Feb 6.
+
+---
+
+## 2026-11-16
+
+### Design refresh v1 + free account to save follows — DEPLOYED 2026-11-16
+
+- Design refresh (brief `cowork-design-refresh-v1.md`, Phases 1–5) merged to `main` and live: brand system, off-season home, score cards, teams-first My Feed. Reference mockups in `docs/mockups/`.
+- Signed-out follows are held for the visit only; following a team opens the free sign-up ("Create a free account to save your teams.") and picks merge into the account on sign-up.
+- `src/config/season.js`: `CHAMPIONSHIP_GAME_IDS` set (M `ncaa-6599996`, W `ncaa-6599965`) → "2026 champion: …"; `SEASON_START` is now per gender (M 2027-01-30, W 2027-02-05) for the countdown and "season opens" copy.
+- Known data issues (pipeline, not fixed): Stanford W poll record stored as "1701"; Queens (NC) vs Utah 2026-04-18 missing the Queens score; no line scores on game docs; NCAA box scores don't fit the box-score table; full box scores embedded in `/games` make windowed reads heavy.
+- Inside Lacrosse can't be opened by Claude's browser pane (blocked), so automated comparison against it isn't possible from Claude.
+
+---
+
 ## 2026-10-05
 
 ### Goalkeeper + face-off boards from the NCAA's official stat lists — DEPLOYED 2026-10-05
