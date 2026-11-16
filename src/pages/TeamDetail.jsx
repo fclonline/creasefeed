@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getProgramById } from '../data/programs.js'
+import { FOLLOW_LIMIT_NOTE } from '../config/pro.js'
 import { useTeams } from '../hooks/useTeams.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { GameModal, chip, ac } from '../components/shared.jsx'
@@ -160,12 +161,11 @@ export default function TeamDetailPage({ teamId, isW, onBack, onAuthClick }) {
   }, [games, program])
 
   const handleFollow = async () => {
-    if (!user) { onAuthClick('signin'); return }
     if (followed) {
       await unfollowTeam(teamId)
     } else {
       const result = await followTeam(teamId)
-      if (result?.error === 'pro') onAuthClick('pro')
+      if (result?.error === 'pro') onAuthClick('pro', FOLLOW_LIMIT_NOTE)
     }
   }
 

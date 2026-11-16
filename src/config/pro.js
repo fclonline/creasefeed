@@ -18,3 +18,6 @@ export const FREE_FOLLOW_LIMIT = 2
 
 export const PRO_PRICE_MONTHLY = '$9.99'
 export const PRO_PRICE_ANNUAL  = '$79.99'
+
+// Shown at the top of the Go Pro modal when a free follow hits the cap.
+export const FOLLOW_LIMIT_NOTE = 'Follow unlimited teams with Pro.'

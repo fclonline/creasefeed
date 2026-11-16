@@ -318,6 +318,9 @@ function SeasonLabel() {
 }
 
 export function ContextBar({ page, gender, setGender, division, setDivision, isW }) {
+  // The off-season home carries its own segmented toggles.
+  const season = useSeasonState()
+  if (page === 'scores' && season && !season.loading && season.offseason) return null
   const showGender   = !HIDE_GENDER_ON.includes(page)
   const showDivision = !HIDE_DIVISION_ON.includes(page)
   return (
@@ -470,12 +473,12 @@ function PlayerStatsTable({ teamData, isW }) {
 }
 
 // ─── GAME MODAL ──────────────────────────────────────────────────────────────
-export function GameModal({ game, onClose, isW, espnId, gender }) {
+export function GameModal({ game, onClose, isW, espnId, gender, initialTab = 'summary' }) {
   const hasScore = game.status !== 'upcoming'
   const awayWin  = hasScore && game.away.score > game.home.score
   const isLive   = game.status === 'live'
   const color    = ac(isW)
-  const [activeTab, setActiveTab] = useState('summary')
+  const [activeTab, setActiveTab] = useState(initialTab)
 
   // Fetch real game detail from NCAA / ESPN / Firestore
   const { detail, loading: detailLoading } = useGameDetail(espnId || game.id, gender, hasScore)
@@ -520,7 +523,7 @@ export function GameModal({ game, onClose, isW, espnId, gender }) {
 
         {/* header bar */}
         <div className="modal-close-bar">
-          <div className="modal-crumb">{game.conf} · {game.gender} · D1 · {game.loc}</div>
+          <div className="modal-crumb">{[game.gender === 'W' ? "Women's" : "Men's", game.div ? `D${game.div}` : null, game.loc].filter(Boolean).join(' · ')}</div>
           <button className="modal-x" onClick={onClose}>✕</button>
         </div>
 
@@ -685,7 +688,7 @@ function friendlyAuthError(err) {
   }
 }
 
-export function AuthModal({ mode, onClose, isW }) {
+export function AuthModal({ mode, note, onClose, isW }) {
   const { user, pro, signIn, signUpEmail, signInEmail } = useAuth()
   const [view, setView] = useState(mode === 'pro' ? 'pro' : 'signin')
   const [emailMode, setEmailMode] = useState('signup') // 'signup' (create free profile) | 'signin'
@@ -779,6 +782,7 @@ export function AuthModal({ mode, onClose, isW }) {
         {view === 'pro' ? (
           <>
             <div className="auth-title">Go Pro</div>
+            {note && <div className="pro-modal-note" role="status">{note}</div>}
             {pro ? (
               <>
                 <div className="auth-sub" style={{ marginBottom: 16 }}>

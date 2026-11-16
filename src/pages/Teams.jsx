@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { PROGRAMS, getConferences, searchPrograms, normTeam, canonTeam, TEAM_ALIASES } from '../data/programs.js'
+import { FOLLOW_LIMIT_NOTE } from '../config/pro.js'
 import { useTeams } from '../hooks/useTeams.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { fetchTeamRecords } from '../api/firestore.js'
@@ -92,12 +93,11 @@ export default function TeamsPage({ gender, division, isW, onAuthClick, onSelect
   }, [programs])
 
   const handleFollow = async (programId) => {
-    if (!user) { onAuthClick('signin'); return }
     if (isFollowing(programId)) {
       await unfollowTeam(programId)
     } else {
       const result = await followTeam(programId)
-      if (result?.error === 'pro') onAuthClick('pro')
+      if (result?.error === 'pro') onAuthClick('pro', FOLLOW_LIMIT_NOTE)
     }
   }
 

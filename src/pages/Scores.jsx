@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useScores, useStatLeaders } from '../hooks/useScores.jsx'
 import { useSeasonState } from '../hooks/useSeasonState.jsx'
 import PollCard from '../components/PollCard.jsx'
+import OffseasonHome from './OffseasonHome.jsx'
 import { LIVE_PRO_FEATURES, PRO_PRICE_MONTHLY, PRO_PRICE_ANNUAL } from '../config/pro.js'
 import { getSeason } from '../api/firestore.js'
 import { DATE_ENTRIES, CONFERENCES_M, CONFERENCES_W } from '../data/mockData.js'
@@ -28,7 +29,13 @@ function GameSkeleton() {
   )
 }
 
-export default function ScoresPage({ gender, division, isW, onAuthClick }) {
+export default function ScoresPage(props) {
+  const season = useSeasonState()
+  if (season && !season.loading && season.offseason) return <OffseasonHome {...props} />
+  return <InSeasonScores {...props} />
+}
+
+function InSeasonScores({ gender, division, isW, onAuthClick }) {
   const todayIdx = DATE_ENTRIES.findIndex(d => d.isToday)
   const [activeDateIdx, setActiveDateIdx] = useState(todayIdx >= 0 ? todayIdx : 3)
   const [activeConf, setActiveConf] = useState('All')
