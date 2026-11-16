@@ -5,7 +5,6 @@
 // ============================================================================
 import { useState, useEffect, useRef } from 'react'
 import { subscribeToScoreboard, fetchStandings, fetchStatLeaders, fetchOfficialBoard, fetchAllPolls } from '../api/firestore.js'
-import { STATS_M, STATS_W } from '../data/mockData.js'
 // ── useScores — real-time Firestore only ─────────────────────────────────────
 // date is YYYYMMDD (e.g. "20260524"); division is "1"/"2"/"3". Both are passed
 // through to the Firestore query so the scoreboard is scoped to the selected
@@ -86,16 +85,9 @@ export function useStatLeaders(gender, tab, division = '1') {
   useEffect(() => {
     let cancelled = false
     setThroughDate(null)
-    const useMock = (reason) => {
-      if (import.meta.env.DEV && !OFFICIAL_BOARDS.includes(tab)) {
-        const mock = gender === 'W' ? STATS_W : STATS_M
-        setRows(mock[tab] || mock.goals)
-        setSource('mock')
-      } else {
-        setRows([])
-        setSource(reason)
-      }
-    }
+    // Empty or failed reads resolve to an empty state — never sample rows,
+    // in dev or prod.
+    const setEmpty = (reason) => { setRows([]); setSource(reason) }
     // A null tab means the caller is rendering a withheld board; don't query.
     if (!tab) { setRows([]); setSource('withheld'); setLoading(false); return }
     ;(async () => {
@@ -109,7 +101,7 @@ export function useStatLeaders(gender, tab, division = '1') {
             setThroughDate(board.throughDate)
             setSource('official')
           } else {
-            useMock('empty')
+            setEmpty('empty')
           }
           return
         }
@@ -119,11 +111,11 @@ export function useStatLeaders(gender, tab, division = '1') {
             setRows(data)
             setSource('ncaa')
           } else {
-            useMock('empty')
+            setEmpty('empty')
           }
         }
       } catch {
-        if (!cancelled) useMock('error')
+        if (!cancelled) setEmpty('error')
       } finally {
         if (!cancelled) setLoading(false)
       }

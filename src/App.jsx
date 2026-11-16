@@ -10,6 +10,7 @@ import TeamDetailPage from './pages/TeamDetail.jsx'
 import PollsPage    from './pages/Polls.jsx'
 import { useAuth }  from './hooks/useAuth.jsx'
 import { useTeams } from './hooks/useTeams.jsx'
+import { SeasonStateProvider } from './hooks/useSeasonState.jsx'
 
 export default function App() {
   const [page,     setPage]     = useState('scores')
@@ -41,6 +42,7 @@ export default function App() {
   }
 
   return (
+    <SeasonStateProvider gender={gender} division={division}>
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Ticker   gender={gender} division={division} isW={isW} />
       <Navbar
@@ -71,5 +73,6 @@ export default function App() {
       {authMode       && <AuthModal    mode={authMode} onClose={closeAuth} isW={isW} />}
       {shouldOnboard  && <Onboarding  onDone={handleOnboardingDone} />}
     </div>
+    </SeasonStateProvider>
   )
 }

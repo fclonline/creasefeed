@@ -175,7 +175,7 @@ export default function Onboarding({ onDone }) {
           <div className="ob-logo">CREASE<em>FEED</em></div>
           <div className="ob-headline">Which teams do you follow?</div>
           <div className="ob-sub">
-            Pick your teams — we'll build your personal feed and send you alerts when they play.
+            Pick your teams and we'll build your personal feed.
             {!pro && <> <strong>Free accounts follow up to 2 teams.</strong> Upgrade for unlimited.</>}
           </div>
         </div>

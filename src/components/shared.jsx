@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useTheme } from '../hooks/useTheme.jsx'
-import { useGameDetail, useScores } from '../hooks/useScores.jsx'
+import { useGameDetail } from '../hooks/useScores.jsx'
+import { useSeasonState, useLastFinal } from '../hooks/useSeasonState.jsx'
+import { SEASON_YEAR, seasonStartLabel } from '../config/season.js'
+import { LIVE_PRO_FEATURES, PRO_PRICE_MONTHLY, PRO_PRICE_ANNUAL } from '../config/pro.js'
 
 // ─── THEME TOGGLE ─────────────────────────────────────────────────────────
 function ThemeToggle() {
@@ -29,40 +32,65 @@ function ThemeToggle() {
     </button>
   )
 }
-// No mock data — ticker shows live games only
-
 // ─── helpers ────────────────────────────────────────────────────────────────
 export const ac  = (isW) => isW ? 'var(--women)' : 'var(--accent)'
 export const chip = (isW) => isW ? 'active-w' : 'active-m'
 
-// ─── TICKER (live data) ──────────────────────────────────────────────────────
-export function Ticker({ gender, division, isW }) {
-  // Fetch live games for the ticker
-  const { games } = useScores(gender)
+// "Princeton 16, Notre Dame 9" — winner first.
+export function finalLine(g) {
+  if (!g) return ''
+  const [w, l] = (g.home?.score ?? 0) >= (g.away?.score ?? 0) ? [g.home, g.away] : [g.away, g.home]
+  return { winner: w?.name, wScore: w?.score, loser: l?.name, lScore: l?.score }
+}
 
-  // Build ticker items from live game data if available
-  const tickerItems = (games && games.length > 0) ? games.map(g => {
-    const isLive = g.status === 'live'
-    const isFinal = g.status === 'final'
-    const isUpcoming = g.status === 'upcoming'
-    let text = ''
-    if (isUpcoming) {
-      text = `${g.away.name.toUpperCase()} @ ${g.home.name.toUpperCase()}`
-    } else {
-      text = `${g.away.name.toUpperCase()} ${g.away.score ?? ''} · ${g.home.name.toUpperCase()} ${g.home.score ?? ''}`
-    }
-    return {
-      text,
-      period: g.period,
-      live: isLive,
-      gender: g.gender,
-    }
-  }) : [{ text: 'CREASEFEED — LIVE SCORES & STATS', period: '', live: false, gender }]
+// ─── OFF-SEASON TICKER ───────────────────────────────────────────────────────
+// Shown when the selection has no games in the ticker window (past 3 days +
+// next 3 days). Static band: Off-season pill, last final, season-open date.
+function OffseasonTicker({ gender, division }) {
+  const { game, isChampionship } = useLastFinal(gender, division)
+  const opens = seasonStartLabel()
+  const f = game ? finalLine(game) : null
+  const dataYear = game?.season || ''
+  return (
+    <div className="ticker-root offseason" role="status">
+      <span className="ticker-off-pill">Off-season</span>
+      {f && (
+        <span className="ticker-off-item">
+          {isChampionship ? `${dataYear} champion: ` : 'Last final: '}
+          <strong>{f.winner}</strong> {f.wScore}, {f.loser} {f.lScore}
+        </span>
+      )}
+      {opens && (<>
+        {f && <span className="ticker-off-sep" aria-hidden="true">·</span>}
+        <span className="ticker-off-item">{SEASON_YEAR} season opens {opens}</span>
+      </>)}
+    </div>
+  )
+}
+
+// ─── TICKER (live data) ──────────────────────────────────────────────────────
+// Scoped to the selected gender + division and to the ticker window, so the
+// label always matches its contents.
+export function Ticker({ gender, division, isW }) {
+  const season = useSeasonState()
+  const games = season?.tickerGames || []
+
+  if (season?.loading) return <div className="ticker-root" aria-hidden="true" />
+  if (games.length === 0) return <OffseasonTicker gender={gender} division={division} />
+
+  const tickerItems = [...games]
+    .sort((a, b) => (a.gameDate + (a.startTimeEpoch || '')).localeCompare(b.gameDate + (b.startTimeEpoch || '')))
+    .map(g => {
+      const isUpcoming = g.status === 'upcoming'
+      const text = isUpcoming
+        ? `${g.away.name.toUpperCase()} @ ${g.home.name.toUpperCase()}`
+        : `${g.away.name.toUpperCase()} ${g.away.score ?? ''} · ${g.home.name.toUpperCase()} ${g.home.score ?? ''}`
+      return { text, period: isUpcoming ? (g.time || g.period || '') : g.period, live: g.status === 'live' }
+    })
 
   const doubled = [...tickerItems, ...tickerItems]
   // Keep a constant, calm scroll speed regardless of how many games are in the
   // ticker: one full copy scrolls per cycle, so duration scales with item count.
-  // Bump SECONDS_PER_ITEM up to slow it down further (or down to speed it up).
   const SECONDS_PER_ITEM = 6
   const scrollSeconds = Math.max(40, tickerItems.length * SECONDS_PER_ITEM)
   return (
@@ -73,7 +101,7 @@ export function Ticker({ gender, division, isW }) {
       <div className="ticker-scroll">
         <div className="ticker-track" style={{ animationDuration: `${scrollSeconds}s` }}>
           {doubled.map((item, i) => (
-            <div key={i} className="ticker-item">
+            <div key={i} className="ticker-item" aria-hidden={i >= tickerItems.length ? 'true' : undefined}>
               {item.live && <span className="t-live">LIVE</span>}
               <span>{item.text}</span>
               <span className="t-period">{item.period}</span>
@@ -290,6 +318,13 @@ export function CollapsibleFilter({ label, options, value, onChange, isW, classN
 const HIDE_GENDER_ON   = ['schedule']
 const HIDE_DIVISION_ON = []
 
+// Off-season reads "Off-season"; in season, "<SEASON_YEAR> · Spring Season".
+function SeasonLabel() {
+  const season = useSeasonState()
+  if (!season || season.loading) return <div className="ctx-season" />
+  return <div className="ctx-season">{season.offseason ? 'Off-season' : `${SEASON_YEAR} · Spring Season`}</div>
+}
+
 export function ContextBar({ page, gender, setGender, division, setDivision, isW }) {
   const showGender   = !HIDE_GENDER_ON.includes(page)
   const showDivision = !HIDE_DIVISION_ON.includes(page)
@@ -309,7 +344,7 @@ export function ContextBar({ page, gender, setGender, division, setDivision, isW
           value={division} onChange={setDivision} isW={isW}
         />
       )}
-      <div className="ctx-season">2026 · Spring Season</div>
+      <SeasonLabel />
     </div>
   )
 }
@@ -768,15 +803,8 @@ export function AuthModal({ mode, onClose, isW }) {
               </>
             ) : (
               <>
-                <div className="auth-sub">
-                  Everything you need to follow college lacrosse — live play-by-play, push alerts, full stats, and zero ads.
-                </div>
                 <ul className={`pro-features ${isW ? 'w' : ''}`} style={{ marginBottom: 24 }}>
-                  <li>Live play-by-play & shot charts</li>
-                  <li>Push alerts for your teams</li>
-                  <li>Full advanced stats database</li>
-                  <li>Recruiting board access (coming soon)</li>
-                  <li>Ad-free on all devices</li>
+                  {LIVE_PRO_FEATURES.map(f => <li key={f.label}>{f.label}</li>)}
                 </ul>
                 {error && <div className="auth-error" style={{ marginBottom: 10 }}>{error}</div>}
                 <button
@@ -785,7 +813,7 @@ export function AuthModal({ mode, onClose, isW }) {
                   onClick={() => handleCheckout('monthly')}
                   disabled={checkoutLoading}
                 >
-                  {checkoutLoading ? 'Loading...' : 'Start Pro — $9.99/month →'}
+                  {checkoutLoading ? 'Loading...' : `Start Pro — ${PRO_PRICE_MONTHLY}/month →`}
                 </button>
                 <button
                   className={`btn-auth-outline ${isW ? 'w' : ''}`}
@@ -793,7 +821,7 @@ export function AuthModal({ mode, onClose, isW }) {
                   onClick={() => handleCheckout('annual')}
                   disabled={checkoutLoading}
                 >
-                  {checkoutLoading ? 'Loading...' : 'Annual — $79.99/year (save 33%) →'}
+                  {checkoutLoading ? 'Loading...' : `Annual — ${PRO_PRICE_ANNUAL}/year (save 33%) →`}
                 </button>
                 <div className="pro-price" style={{ textAlign: 'center', marginBottom: 16 }}>Cancel anytime</div>
               </>
@@ -810,7 +838,7 @@ export function AuthModal({ mode, onClose, isW }) {
             <div className="auth-title">{emailMode === 'signup' ? 'Create your free account' : 'Welcome back'}</div>
             <div className="auth-sub">
               {emailMode === 'signup'
-                ? 'Free to follow your teams and get game alerts. No card required.'
+                ? 'Free to follow up to 2 teams. No card required.'
                 : 'Sign in to your CreaseFeed account.'}
             </div>
             <button className="btn-google" onClick={handleGoogle}>

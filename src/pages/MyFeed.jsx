@@ -246,7 +246,7 @@ export default function MyFeedPage({ onEditTeams, onAuthClick, isW }) {
                 {followedList.length >= 2 ? 'Following limit reached' : `${followedList.length}/2 free teams used`}
               </div>
               <div style={{ fontFamily: "'Barlow'", fontSize: 12, color: 'var(--mid)', marginBottom: 12, lineHeight: 1.6 }}>
-                Upgrade to Pro for unlimited team follows, live goal-by-goal alerts, and full stats.
+                Upgrade to Pro to follow unlimited teams.
               </div>
               <button
                 onClick={() => onAuthClick('pro')}

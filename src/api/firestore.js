@@ -174,7 +174,14 @@ export function pollIdsFor(gender, division = '1') {
 
 // ── Fetch the Scores sidebar poll ────────────────────────────────────────────
 // Prefers USA Lacrosse because it carries W-L records; falls back to USILA.
+// One retry: a failed read used to leave the poll card stuck on its empty
+// state on flaky mobile connections.
 export async function fetchStandings(gender, division = '1') {
+  const first = await fetchStandingsOnce(gender, division)
+  return first === undefined ? ((await fetchStandingsOnce(gender, division)) ?? null) : first
+}
+
+async function fetchStandingsOnce(gender, division) {
   try {
     const ids = [...pollIdsFor(gender, division)].reverse()
     for (const id of ids) {
@@ -196,7 +203,7 @@ export async function fetchStandings(gender, division = '1') {
     return null
   } catch (err) {
     console.warn('[CreaseFeed] Firestore fetchStandings failed:', err.message)
-    return null
+    return undefined
   }
 }
 
@@ -346,5 +353,115 @@ export async function fetchGameDetail(gameId, gender) {
   } catch (err) {
     console.warn('[CreaseFeed] fetchGameDetail failed:', err.message)
     return null
+  }
+}
+
+// ── Date helpers for windowed game queries ───────────────────────────────────
+export const toYmd = (d) =>
+  `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+
+// YYYYMMDD strings for each day from `from` to `to` days relative to `base`.
+export function dayRange(base, from, to) {
+  const out = []
+  for (let i = from; i <= to; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i)
+    out.push(toYmd(d))
+  }
+  return out
+}
+
+const gamesInDates = (gender, div, dates) => query(
+  collection(db, 'games'),
+  where('gender', '==', gender),
+  where('season', '==', SEASON),
+  where('gameDate', 'in', dates),
+  where('div', '==', String(div)),
+  orderBy('updatedAt', 'desc'),
+  limit(200),
+)
+
+// ── Subscribe to one gender + division over a short list of dates ─────────────
+// `in` on gameDate is index-equivalent to equality, so this rides the existing
+// (gender, season, gameDate, div, updatedAt) composite index. Max 30 dates.
+export function subscribeToGameWindow(gender, div, dates, onData, onError) {
+  return onSnapshot(gamesInDates(gender, div, dates.slice(0, 30)),
+    (snap) => onData(snap.docs.filter(isCanonicalGame).map(d => ({ id: d.id, ...d.data() }))),
+    (err) => { console.warn('[CreaseFeed] game window error:', err.message); onError?.(err) },
+  )
+}
+
+// ── 30-day chunks of a division's games, newest first (memoized) ─────────────
+// Game docs carry full box scores, so these reads are kept to 30-day windows
+// and cached for the session rather than pulling the whole season.
+const chunkCache = new Map()
+function fetchChunk(gender, div, endDate) {
+  const key = `${SEASON}|${gender}|${div}|${toYmd(endDate)}`
+  if (!chunkCache.has(key)) {
+    chunkCache.set(key, getDocs(gamesInDates(gender, div, dayRange(endDate, -29, 0)))
+      .then(snap => snap.docs.filter(isCanonicalGame).map(d => ({ id: d.id, ...d.data() })))
+      .catch(err => { chunkCache.delete(key); throw err }))
+  }
+  return chunkCache.get(key)
+}
+
+const byNewest = (a, b) =>
+  (b.gameDate + (b.startTimeEpoch || '')).localeCompare(a.gameDate + (a.startTimeEpoch || ''))
+
+// Walks back from today (capped at June 30 of the data season) one 30-day
+// chunk at a time, calling `pick(finals)` until it returns something.
+async function walkFinals(gender, div, pick) {
+  await initSeason()
+  const now = new Date()
+  const seasonEnd = new Date(Number(SEASON), 5, 30)
+  const seasonStart = new Date(Number(SEASON), 0, 1)
+  let cursor = now < seasonEnd ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : seasonEnd
+  for (let i = 0; i < 7 && cursor >= seasonStart; i++) {
+    const finals = (await fetchChunk(gender, div, cursor)).filter(g => g.status === 'final').sort(byNewest)
+    const hit = pick(finals)
+    if (hit) return hit
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - 30)
+  }
+  return null
+}
+
+// ── Most recent final game for one gender + division (null if none) ───────────
+export async function fetchLastFinal(gender, div) {
+  try {
+    return await walkFinals(gender, div, finals => finals[0] || null)
+  } catch (err) {
+    console.warn('[CreaseFeed] fetchLastFinal failed:', err.message)
+    return null
+  }
+}
+
+// ── One game doc by id (canonical docs only) ──────────────────────────────────
+export async function fetchGameById(id) {
+  if (!id || !String(id).startsWith('ncaa-')) return null
+  try {
+    const snap = await getDoc(doc(db, 'games', id))
+    return snap.exists() ? { id: snap.id, ...snap.data() } : null
+  } catch (err) {
+    console.warn('[CreaseFeed] fetchGameById failed:', err.message)
+    return null
+  }
+}
+
+// ── Most recent final + next scheduled game for one team ──────────────────────
+// For the My Feed preview. `seo` is the NCAA team slug on game docs.
+const hasTeam = (g, seo) => g.away?.teamSeo === seo || g.home?.teamSeo === seo
+export async function fetchTeamGames(gender, div, seo) {
+  if (!seo) return { last: null, next: null }
+  try {
+    const last = await walkFinals(gender, div, finals => finals.find(g => hasTeam(g, seo)) || null)
+    const today = new Date()
+    const upcoming = await fetchChunk(gender, div, new Date(today.getFullYear(), today.getMonth(), today.getDate() + 29))
+    const todayYmd = toYmd(today)
+    const next = upcoming
+      .filter(g => g.status !== 'final' && g.gameDate >= todayYmd && hasTeam(g, seo))
+      .sort((a, b) => byNewest(b, a))[0] || null
+    return { last, next }
+  } catch (err) {
+    console.warn('[CreaseFeed] fetchTeamGames failed:', err.message)
+    return { last: null, next: null }
   }
 }

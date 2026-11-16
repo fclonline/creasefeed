@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CreaseFeed — pick your teams</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0E1A2B}a:hover{color:#1D6B44}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #F4F6F8; font-family: Inter, system-ui, sans-serif; color: #0E1A2B; font-variant-numeric: tabular-nums">
+
+  <header style="background: #FFFFFF; border-bottom: 1px solid #DDE2E8; display: flex; align-items: center; gap: 10px; padding: 12px 16px">
+    <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 8px; background: #0E1A2B; display: flex; align-items: center; justify-content: center">
+      <span style="width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid {{accent}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 10px; color: #FFFFFF">CF</span>
+    </span>
+    <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 24px; line-height: 1">CREASE<span style="color: {{accent}}">FEED</span></span>
+    <a href="#" style="margin-left: auto; font-size: 15px; font-weight: 600; text-decoration: none; padding: 12px 4px">Sign in</a>
+  </header>
+
+  <div style="padding: 18px 16px 0; display: flex; flex-direction: column; gap: 14px">
+    <div>
+      <span style="font-size: 13px; font-weight: 600; color: #556070">Step 1 of 2 · No account needed</span>
+      <h1 style="margin: 4px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 34px; line-height: 1.05">Pick your teams</h1>
+    </div>
+
+    <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #3A4555">Search D1–D3 teams
+      <input type="search" placeholder="Try &#34;Duke&#34; or &#34;Tufts&#34;" style="font: 400 16px Inter, sans-serif; padding: 12px 14px; border: 1px solid #C9D2DD; border-radius: 10px; background: #FFFFFF; color: #0E1A2B">
+    </label>
+
+    <div style="display: flex; gap: 8px; overflow-x: auto">
+      <button type="button" style="flex: none; border: 0; background: #0E1A2B; color: #FFFFFF; font: 600 14px Inter, sans-serif; padding: 11px 14px; border-radius: 999px">Men's</button>
+      <button type="button" style="flex: none; border: 1px solid #C9D2DD; background: #FFFFFF; color: #3A4555; font: 600 14px Inter, sans-serif; padding: 11px 14px; border-radius: 999px">Women's</button>
+      <button type="button" style="flex: none; border: 0; background: #0E1A2B; color: #FFFFFF; font: 600 14px Inter, sans-serif; padding: 11px 14px; border-radius: 999px">D1</button>
+      <button type="button" style="flex: none; border: 1px solid #C9D2DD; background: #FFFFFF; color: #3A4555; font: 600 14px Inter, sans-serif; padding: 11px 14px; border-radius: 999px">D2</button>
+      <button type="button" style="flex: none; border: 1px solid #C9D2DD; background: #FFFFFF; color: #3A4555; font: 600 14px Inter, sans-serif; padding: 11px 14px; border-radius: 999px">D3</button>
+    </div>
+
+    <ul style="list-style: none; margin: 0; padding: 0; background: #FFFFFF; border: 1px solid #DDE2E8; border-radius: 12px; overflow: hidden">
+      <li style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #EEF1F4">
+        <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 8px; background: #E77500; color: #000; font: 800 12px 'Barlow Condensed', sans-serif; display: flex; align-items: center; justify-content: center">PRIN</span>
+        <span style="display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 16px">Princeton</span><span style="font-size: 13px; color: #556070">Men's D1 · Ivy</span></span>
+        <button type="button" aria-pressed="true" style="margin-left: auto; border: 0; background: {{accent}}; color: #FFFFFF; font: 700 14px Inter, sans-serif; padding: 12px 14px; border-radius: 8px; min-width: 96px">Following ✓</button>
+      </li>
+      <li style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #EEF1F4">
+        <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 8px; background: #012169; color: #FFF; font: 800 12px 'Barlow Condensed', sans-serif; display: flex; align-items: center; justify-content: center">DUKE</span>
+        <span style="display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 16px">Duke</span><span style="font-size: 13px; color: #556070">Men's D1 · ACC</span></span>
+        <button type="button" aria-pressed="true" style="margin-left: auto; border: 0; background: {{accent}}; color: #FFFFFF; font: 700 14px Inter, sans-serif; padding: 12px 14px; border-radius: 8px; min-width: 96px">Following ✓</button>
+      </li>
+      <li style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #EEF1F4">
+        <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 8px; background: #F76900; color: #000; font: 800 12px 'Barlow Condensed', sans-serif; display: flex; align-items: center; justify-content: center">SYR</span>
+        <span style="display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 16px">Syracuse</span><span style="font-size: 13px; color: #556070">Men's D1 · ACC</span></span>
+        <button type="button" aria-pressed="false" style="margin-left: auto; border: 1px solid #C9D2DD; background: #FFFFFF; color: #0E1A2B; font: 700 14px Inter, sans-serif; padding: 12px 14px; border-radius: 8px; min-width: 96px">+ Follow</button>
+      </li>
+      <li style="display: flex; align-items: center; gap: 12px; padding: 10px 12px">
+        <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 8px; background: #0C2340; color: #C99700; font: 800 12px 'Barlow Condensed', sans-serif; display: flex; align-items: center; justify-content: center">ND</span>
+        <span style="display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 16px">Notre Dame</span><span style="font-size: 13px; color: #556070">Men's D1 · ACC</span></span>
+        <button type="button" aria-pressed="false" style="margin-left: auto; border: 1px solid #C9D2DD; background: #FFFFFF; color: #0E1A2B; font: 700 14px Inter, sans-serif; padding: 12px 14px; border-radius: 8px; min-width: 96px">+ Follow</button>
+      </li>
+    </ul>
+
+    <div style="background: #FFFFFF; border: 1px solid #DDE2E8; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; color: #556070">Your feed preview</span>
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 15px">
+        <span style="font-weight: 700; font-size: 12px; letter-spacing: 0.06em">FINAL</span>
+        <span style="flex: 1">Princeton <strong>16</strong>, Notre Dame 9</span>
+        <span style="font-size: 13px; color: #556070">May 25</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 15px">
+        <span style="font-weight: 700; font-size: 12px; letter-spacing: 0.06em">NEXT</span>
+        <span style="flex: 1">Duke — 2027 opener</span>
+        <span style="font-size: 13px; color: #556070">[DATE]</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 64px; background: #FFFFFF; border-top: 1px solid #DDE2E8; padding: 12px 16px; display: flex; align-items: center; gap: 12px">
+    <span style="font-size: 14px; color: #3A4555"><strong style="color: #0E1A2B">2 teams</strong> selected</span>
+    <a href="#" style="margin-left: auto; background: #0E1A2B; color: #FFFFFF; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.05em; text-transform: uppercase; text-decoration: none; padding: 13px 18px; border-radius: 8px">Save my feed — free</a>
+  </div>
+
+  <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: #0E1A2B; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center">
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: #9FD8B8; font: 700 12px Inter, sans-serif">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3 12 2"></polygon></svg>Feed</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: #C9D2DD; font: 600 12px Inter, sans-serif">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg>Scores</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: #C9D2DD; font: 600 12px Inter, sans-serif">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><line x1="8" y1="3" x2="8" y2="7"></line><line x1="16" y1="3" x2="16" y2="7"></line></svg>Schedule</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: #C9D2DD; font: 600 12px Inter, sans-serif">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="20" x2="6" y2="12"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="18" y1="20" x2="18" y2="9"></line></svg>Standings</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: #C9D2DD; font: 600 12px Inter, sans-serif">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v5a5 5 0 0 1-10 0z"></path><path d="M17 6h3a3 3 0 0 1-3 3"></path><path d="M7 6H4a3 3 0 0 0 3 3"></path></svg>Polls</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1D6B44","options":["#1D6B44","#3D8B4F","#0E1A2B"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#1D6B44' };
+  }
+}
+</script>
+</body>
+</html>

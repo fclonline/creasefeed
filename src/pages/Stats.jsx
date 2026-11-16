@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useStatLeaders } from '../hooks/useScores.jsx'
+import { getSeason } from '../api/firestore.js'
 import { chip, ac } from '../components/shared.jsx'
 import { PROGRAMS, getProgramById, normTeam, canonTeam, seoKey, TEAM_ALIASES } from '../data/programs.js'
 
@@ -125,15 +126,10 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
   const throughLabel = throughDate
     ? new Date(`${throughDate}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
     : ''
+  // Neutral provenance line only; internal source names never reach the UI.
   const sourceLabel = source === 'official' ? `NCAA official statistics${throughLabel ? ` · through ${throughLabel}` : ''} · qualified players only`
-    : source === 'ncaa' ? 'NCAA box scores — season totals unverified'
-    : source === 'firestore' ? 'Firestore (scraped)'
-    : source === 'espn' ? 'ESPN API'
-    : source === 'mock' ? 'Sample Data (scrapers pending)'
-    : source === 'none' ? 'No data source connected'
-    : source === 'empty' ? 'No verified data for this view'
-    : source === 'error' ? 'Data temporarily unavailable'
-    : 'Loading...'
+    : source === 'ncaa' ? 'Season totals from game box scores · not yet verified'
+    : ''
 
   return (
     <div className="stats-page">
@@ -144,19 +140,19 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
           </button>
         ))}
         <div style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed'", fontSize: 11, color: 'var(--muted)', letterSpacing: '1px' }}>
-          {gender === 'M' ? "Men's" : "Women's"} · D{division} · 2026 Season
+          {gender === 'M' ? "Men's" : "Women's"} · D{division} · {getSeason()} Season
         </div>
       </div>
 
       {/* Data source indicator — meaningless on a withheld tab, so hidden */}
-      {!withheld && <div style={{
+      {!withheld && sourceLabel && <div style={{
         fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-        color: (source === 'none' || source === 'error') ? 'var(--red)' : (source === 'firestore' || source === 'official') ? 'var(--accent)' : source === 'mock' ? 'var(--muted)' : 'var(--yellow)',
+        color: 'var(--muted)',
         marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5,
       }}>
         <span style={{
           width: 6, height: 6, borderRadius: '50%', display: 'inline-block',
-          background: (source === 'none' || source === 'error') ? 'var(--red)' : (source === 'firestore' || source === 'official') ? 'var(--accent)' : source === 'mock' ? 'var(--muted)' : 'var(--yellow)',
+          background: source === 'official' ? 'var(--accent)' : 'var(--muted)',
         }}/>
         {sourceLabel}
       </div>}
@@ -187,11 +183,10 @@ export default function StatsPage({ gender, division, isW, onSelectTeam }) {
           border: '1px dashed var(--border2)', margin: '20px 0',
         }}>
           <div style={{ fontFamily: "'Barlow Condensed'", fontWeight: 900, fontSize: 22, marginBottom: 8 }}>
-            NO {tab.label.toUpperCase()} LEADERBOARD YET
+            No {tab.label.toLowerCase()} leaders yet
           </div>
           <div style={{ fontFamily: "'Barlow'", fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
-            We don't have verified numbers for this view yet.
-            <br/>Leaderboards return when the season data is confirmed.
+            Stats update after games are final.
           </div>
         </div>
       )}

@@ -1,29 +1,16 @@
 import { useState, useEffect } from 'react'
-import { useScores, useStandings, useStatLeaders } from '../hooks/useScores.jsx'
+import { useScores, useStatLeaders } from '../hooks/useScores.jsx'
+import { useSeasonState } from '../hooks/useSeasonState.jsx'
+import PollCard from '../components/PollCard.jsx'
+import { LIVE_PRO_FEATURES, PRO_PRICE_MONTHLY, PRO_PRICE_ANNUAL } from '../config/pro.js'
+import { getSeason } from '../api/firestore.js'
 import { DATE_ENTRIES, CONFERENCES_M, CONFERENCES_W } from '../data/mockData.js'
 import { GameCard, GameModal, CollapsibleFilter, ac } from '../components/shared.jsx'
 
-function SourceBadge({ source, error }) {
-  if (!source || source === 'loading') return null
-  const isNcaa = source === 'ncaa'
-  const isEmpty = source === 'empty'
-  return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-      color: isNcaa ? 'var(--accent)' : 'var(--muted)',
-      marginBottom: 16,
-    }}>
-      <span style={{
-        width: 6, height: 6, borderRadius: '50%',
-        background: isNcaa ? 'var(--accent)' : 'var(--muted)',
-        display: 'inline-block',
-        ...(isNcaa ? { animation: 'blink 2s infinite' } : {}),
-      }} />
-      {isNcaa ? 'Live data · NCAA' : isEmpty ? 'No games scheduled today' : 'Loading...'}
-      {error && <span style={{ color: 'var(--yellow)', marginLeft: 4 }}>⚠ {error}</span>}
-    </div>
-  )
+// Only surfaces a load failure; no data-source labels in the UI.
+function LoadError({ error }) {
+  if (!error) return null
+  return <div className="load-error" role="alert">Scores couldn't load. Please refresh.</div>
 }
 
 function GameSkeleton() {
@@ -58,8 +45,7 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
     ? `${dateObj.getFullYear()}${String(dateObj.getMonth()+1).padStart(2,'0')}${String(dateObj.getDate()).padStart(2,'0')}`
     : undefined
 
-  const { games, loading, error, source } = useScores(gender, dateParam, division)
-  const { standings, source: pollSource, weekLabel: pollWeek } = useStandings(gender, division)
+  const { games, loading, error } = useScores(gender, dateParam, division)
 
   const confs    = isW ? CONFERENCES_W : CONFERENCES_M
   const filtered = games.filter(g => activeConf === 'All' || g.conf === activeConf)
@@ -67,7 +53,9 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
   const final    = filtered.filter(g => g.status === 'final')
   const upcoming = filtered.filter(g => g.status === 'upcoming')
   const selected = selectedId ? games.find(g => g.id === selectedId) : null
-  const { rows: goalLeaders, source: statsSource } = useStatLeaders(gender, 'goals')
+  const season = useSeasonState()
+  const offseason = !!season?.offseason
+  const { rows: goalLeaders, loading: statsLoading } = useStatLeaders(gender, 'goals', division)
   const performers = goalLeaders.slice(0, 4)
 
   return (
@@ -82,7 +70,7 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
 
       <div className="page-layout">
         <div>
-          <SourceBadge source={source} error={error}/>
+          <LoadError error={error}/>
 
           <div className="filter-row">
             <CollapsibleFilter
@@ -120,76 +108,44 @@ export default function ScoresPage({ gender, division, isW, onAuthClick }) {
           </>)}
 
           {!loading && games.length===0 && (
-            <div style={{textAlign:'center',padding:'60px 20px',color:'var(--muted)',fontFamily:"'Barlow Condensed'",fontSize:16}}>
-              No games scheduled for this date.
-            </div>
+            <div className="empty-state">No games scheduled for this date.</div>
           )}
         </div>
 
         <div className="sidebar">
-          <div className="widget">
-            <div className="widget-hd">
-              <span className="widget-title">{pollSource ? pollSource.replace(/ Magazine$/, '') : 'Top 20'}</span>
-              <span className="widget-sub">{gender==='M'?"Men's":"Women's"} · D{division}{pollWeek ? ` · ${pollWeek}` : ''}</span>
-            </div>
-            {standings.length === 0 ? (
-              <div style={{padding:'20px 14px',fontFamily:"'Barlow'",fontSize:12,color:'var(--muted)',textAlign:'center'}}>
-                No poll available for this division yet.
-              </div>
-            ) : (
-              <table className="std-table">
-                <thead><tr><th>Team</th><th>W</th><th>L</th><th>Move</th></tr></thead>
-                <tbody>
-                  {standings.map(s=>(
-                    <tr key={`${s.rank}-${s.team}`}>
-                      <td><span className="std-rank">{s.rank}</span>{s.team}</td>
-                      <td style={{color:'var(--text)'}}>{s.w}</td>
-                      <td>{s.l}</td>
-                      <td style={{color:s.movement>0?ac(isW):s.movement<0?'var(--red)':'var(--muted)'}}>
-                        {s.movement>0?`▲${s.movement}`:s.movement<0?`▼${Math.abs(s.movement)}`:'—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <PollCard gender={gender} division={division} />
 
-          <div className="widget">
-            <div className="widget-hd">
-              <span className="widget-title">Goals Leaders</span>
-              <span className="widget-sub">2026 · D{division}</span>
-            </div>
-            {performers.length === 0 ? (
-              <div style={{padding:'20px 14px',fontFamily:"'Barlow'",fontSize:12,color:'var(--red)',textAlign:'center'}}>
-                NO DATA — playerStats not yet scraped
+          {/* Stat leaders: hidden in the off-season; neutral line in season with no data yet */}
+          {!offseason && !statsLoading && (
+            <div className="widget">
+              <div className="widget-hd">
+                <h2 className="widget-title">Goals Leaders</h2>
+                <span className="widget-sub">{getSeason()} · D{division}</span>
               </div>
-            ) : performers.map((p,i)=>(
-              <div key={i} className="perf-row">
-                <div className={`perf-num ${isW?'w':''}`}>{p.g}</div>
-                <div className="perf-info">
-                  <div className="perf-name">{p.name}</div>
-                  <div className="perf-school">{p.team} · {p.pos}</div>
+              {performers.length === 0 ? (
+                <div className="widget-empty">Stats update after games are final.</div>
+              ) : performers.map((p,i)=>(
+                <div key={i} className="perf-row">
+                  <div className={`perf-num ${isW?'w':''}`}>{p.g}</div>
+                  <div className="perf-info">
+                    <div className="perf-name">{p.name}</div>
+                    <div className="perf-school">{p.team} · {p.pos}</div>
+                  </div>
+                  <div className="perf-cat">Goals</div>
                 </div>
-                <div className="perf-cat">Goals</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className={`pro-widget ${isW?'w':''}`}>
             <div className="pro-title" style={{color:ac(isW)}}>Go Pro</div>
-            <div className="pro-tagline" style={{color:ac(isW)}}>Feed the Crease.</div>
             <ul className={`pro-features ${isW?'w':''}`}>
-              <li>Live play-by-play & shot charts</li>
-              <li>Push alerts for your teams</li>
-              <li>Full advanced stats database</li>
-              <li>Recruiting board (coming soon)</li>
-              <li>Ad-free everywhere</li>
+              {LIVE_PRO_FEATURES.map(f => <li key={f.label}>{f.label}</li>)}
             </ul>
             <button className={`btn-pro ${isW?'w':''}`} style={{width:'100%',padding:10,fontSize:13}} onClick={()=>onAuthClick('pro')}>
-              $9.99 / month →
+              {PRO_PRICE_MONTHLY} / month →
             </button>
-            <div className="pro-price">or $79.99 / year · cancel anytime</div>
+            <div className="pro-price">or {PRO_PRICE_ANNUAL} / year · cancel anytime</div>
           </div>
         </div>
       </div>
